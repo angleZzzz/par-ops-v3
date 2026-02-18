@@ -1,0 +1,2898 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Par Ops – Inventory + Sales + Goals</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#e9eefc;
+      --muted:#a9b4d6;
+      --line:rgba(255,255,255,.08);
+      --accent:#7aa2ff;
+      --good:#64ffda;
+      --warn:#ffd166;
+      --bad:#ff6b6b;
+      --chip:rgba(122,162,255,.14);
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:linear-gradient(180deg,#070b14, #0b1220 35%, #080d18); color:var(--text);}
+    .app{display:flex; min-height:100vh;}
+    .sidebar{
+      width:260px; padding:16px; border-right:1px solid var(--line);
+      background: radial-gradient(1200px 600px at 10% 0%, rgba(122,162,255,.18), transparent 55%),
+                  radial-gradient(900px 500px at 0% 100%, rgba(100,255,218,.14), transparent 55%),
+                  rgba(0,0,0,.12);
+    }
+    .brand{display:flex; gap:10px; align-items:center; padding:10px 10px 10px;}
+    .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#64ffda); box-shadow:0 10px 30px rgba(122,162,255,.25)}
+    .brand h1{font-size:16px;margin:0; line-height:1.2}
+    .brand .sub{font-size:12px;color:var(--muted)}
+    .langRow{display:flex; gap:8px; align-items:center; padding:0 10px 12px;}
+    .langRow label{font-size:12px; color:var(--muted)}
+    .langRow select{min-width:0; width:110px}
+    .nav{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+    .nav button{
+      width:100%; text-align:left; border:1px solid var(--line); background:rgba(255,255,255,.03);
+      color:var(--text); padding:10px 12px; border-radius:14px; cursor:pointer;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .nav button.active{border-color:rgba(122,162,255,.6); background:rgba(122,162,255,.12)}
+    .chip{font-size:12px;color:var(--muted); background:var(--chip); border:1px solid rgba(122,162,255,.25); padding:3px 8px; border-radius:999px}
+    .content{flex:1; padding:14px; max-width:1200px; margin:0 auto; width:100%;}
+    .topbar{display:flex; gap:10px; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap}
+    .title{font-size:20px; font-weight:800; margin:0}
+    .hint{color:var(--muted); font-size:13px}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width: 900px){
+      .sidebar{width:220px}
+      .grid{grid-template-columns:1fr}
+      input, select{min-width:150px}
+    }
+    @media (max-width: 520px){
+      .app{flex-direction:column}
+      .sidebar{width:100%; border-right:none; border-bottom:1px solid var(--line)}
+      .content{padding:12px}
+      .nav{flex-direction:row; flex-wrap:wrap}
+      .nav button{width:auto; flex:1 1 calc(50% - 8px)}
+    }
+    .card{
+      border:1px solid var(--line); border-radius:18px; padding:14px;
+      background: radial-gradient(900px 450px at 10% 0%, rgba(122,162,255,.12), transparent 55%),
+                  rgba(255,255,255,.03);
+      box-shadow: 0 18px 60px rgba(0,0,0,.25);
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    input, select, textarea, button{
+      border-radius:14px; border:1px solid var(--line); padding:10px 12px;
+      background:rgba(0,0,0,.22); color:var(--text);
+    }
+    input, select{min-width:180px}
+    textarea{width:100%; min-height:90px}
+    button{cursor:pointer}
+    button.primary{background:rgba(122,162,255,.18); border-color:rgba(122,162,255,.45)}
+    button.danger{background:rgba(255,107,107,.14); border-color:rgba(255,107,107,.35)}
+    table{width:100%; border-collapse:collapse; margin-top:10px}
+    th,td{border-bottom:1px solid var(--line); padding:10px; text-align:left; vertical-align:top}
+    th{color:var(--muted); font-weight:700; font-size:12px; letter-spacing:.02em}
+    .pill{display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid var(--line); background:rgba(255,255,255,.03)}
+    .ok{border-color:rgba(100,255,218,.35); background:rgba(100,255,218,.10)}
+    .warn{border-color:rgba(255,209,102,.35); background:rgba(255,209,102,.10)}
+    .bad{border-color:rgba(255,107,107,.35); background:rgba(255,107,107,.10)}
+    canvas{width:100%; height:260px; border:1px solid var(--line); border-radius:18px; background:rgba(0,0,0,.16)}
+    .kpi{font-size:26px; font-weight:900}
+    .muted{color:var(--muted)}
+    .hidden{display:none}
+  
+    @media print{
+      body{background:#fff !important; color:#000 !important;}
+      .sidebar{display:none !important;}
+      .content{max-width:none !important; margin:0 !important; padding:0 !important;}
+      .panel{display:none !important;}
+      #dash{display:block !important;}
+      body.print-month #dash{display:none !important;}
+      body.print-month #month{display:block !important;}
+      .card{box-shadow:none !important; border:1px solid #ddd !important; background:#fff !important;}
+      canvas{border:1px solid #ddd !important; background:#fff !important;}
+      button, select, input, textarea{display:none !important;}
+      .hint{color:#444 !important;}
+    }
+
+  
+    /* AUTH */
+    #loginBtn,#logoutBtn{padding:10px 14px; border-radius:14px}
+
+    /* LOCKED MODE: hide sidebar number chips until admin unlock */
+    body.locked .sidebar .chip{display:none !important;}
+
+
+/* Hide entire left sidebar when locked */
+body.locked .left,
+body.locked .sidebar,
+body.locked .left-sidebar {
+    display: none !important;
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>Par Ops</h1>
+        <div class="sub" id="brandSub">Inventory • TVA • Sales</div>
+      </div>
+    </div>
+
+    <div class="langRow">
+      <label id="langLabel" for="langSelect">Language</label>
+      <select id="langSelect">
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+      </select>
+    </div>
+
+    <div class="nav" id="nav">
+      <button data-tab="dash" class="active"><span id="navDash">Dashboard</span> <span class="chip" id="chipToday">$0</span></button>
+      <button data-tab="items"><span id="navItems">Items</span> <span class="chip" id="chipItems">0</span></button>
+      <button data-tab="receive"><span id="navReceive">Receive</span> <span class="chip" id="chipRcpt">0</span></button>
+      <button data-tab="inventory"><span id="navInventory">Inventory</span> <span class="chip" id="chipInv">0</span></button>
+      <button data-tab="sales"><span id="navSales">Sales</span> <span class="chip" id="chipSales">0</span></button>
+      <button data-tab="tva"><span id="navTva">TVA</span> <span class="chip" id="chipTva">0</span></button>
+      <button data-tab="waste"><span id="navWaste">Waste</span> <span class="chip" id="chipWaste">0</span></button>
+            <button data-tab="allLogs"><span id="navAllLogs">All Logs</span> <span class="chip" id="chipAllLogs">All</span></button>
+      <button data-tab="month"><span id="navMonth">Month</span> <span class="chip" id="chipMonth">$0</span></button>
+<button data-tab="backup"><span id="navBackup">Backup</span> <span class="chip">JSON</span></button>
+    </div>
+    <div style="height:10px"></div>
+    <div class="hint" id="sidebarHint">Runs offline • Saves on this device</div>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <div>
+        <p class="title" id="pageTitle">Dashboard</p>
+        <div class="hint" id="pageHint">Today totals + graphs.</div>
+      </div>
+      <div class="hint" id="topHint">Tip: Export backup weekly</div>
+      <div class="row" style="align-items:center; gap:8px;">
+        <button class="primary" id="loginBtn">Login</button>
+        <button class="danger hidden" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <!-- DASH -->
+    <section class="panel" id="dash">
+      <div class="grid">
+        <div class="card">
+          <div class="muted" id="dashRevenueLabel">Today Revenue</div>
+          <div class="kpi" id="kpiTodayRevenue">$0.00</div>
+          <div class="muted" id="kpiTodayProfit">Today Profit (est): $0.00</div>
+        </div>
+        <div class="card">
+          <div class="muted" id="dashTvaLabel">Today TVA (Actual)</div>
+          <div class="kpi" id="kpiTodayTva">$0.00</div>
+          <div class="muted" id="kpiTodayMissing">Missing Qty: 0</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="chartSalesTitle">Sales ($) by Day</div>
+          <canvas id="chartSales" width="900" height="260"></canvas>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="chartTvaTitle">TVA ($) by Day</div>
+          <canvas id="chartTva" width="900" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <div class="muted" id="dashInvValueLabel">Inventory Value (now)</div>
+          <div class="kpi" id="kpiInvValue">$0.00</div>
+          <div class="muted" id="kpiInvQty">Inventory Qty (pieces): 0</div>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="dashToolsTitle">Dashboard Tools</div>
+          <div class="row">
+            <button class="primary" id="printDashBtn">Print Dashboard</button>
+          </div>
+          <div class="hint" style="margin-top:8px;" id="printHint">Tip: Use Print → “Save as PDF”.</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="chartInvTitle">Inventory Value ($) by Day</div>
+          <canvas id="chartInvValue" width="900" height="260"></canvas>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="chartWasteDashTitle">Waste ($) by Day</div>
+          <canvas id="chartWasteDash" width="900" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="chartTargetDashTitle">TVA Actual vs Target</div>
+          <canvas id="chartTargetDash" width="900" height="260"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ITEMS -->
+    <section class="panel hidden" id="items">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="itemsAddTitle">Add / Update Item</div>
+        <div class="row">
+          <input id="itemSku" placeholder="Item code/SKU (optional)" />
+          <input id="itemName" placeholder="Item name" />
+          <input id="itemUnit" placeholder="Base unit (ea, bag, etc)" />
+          <input id="itemPack" type="number" step="1" min="1" placeholder="Pieces per case (optional)" />
+          <input id="itemCost" type="number" step="0.01" min="0" placeholder="Avg unit cost ($)" />
+          <input id="itemPar" type="number" step="1" min="0" placeholder="Par level" />
+          <input id="itemOnHand" type="number" step="1" min="0" placeholder="On-hand" />
+          <input id="itemExp" type="date" placeholder="Expiration date" />
+<button class="primary" id="saveItemBtn">Save Item</button>
+        </div>
+        <div class="hint" style="margin-top:8px;" id="itemsAddHint">
+          Tip: cost is average cost. Receiving can update cost automatically if you enter unit cost on the receipt line.
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="itemsTableTitle">Items</div>
+        <table>
+          <thead>
+            <tr>
+              <th id="thItem">Item</th><th id="thSku">SKU</th><th id="thCost">Avg Cost</th><th id="thPar">Par</th>
+              <th id="thCases">Cases</th><th id="thPieces">Pieces</th><th id="thExp">Next Exp</th><th id="thStatus">Status</th><th id="thActions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="itemsTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RECEIVE -->
+    <section class="panel hidden" id="receive">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="rcptTitle">New Delivery</div>
+        <div class="row">
+          <input id="rcptCode" placeholder="Receipt / Invoice code" />
+          <input id="rcptDate" type="date" />
+          <button class="primary" id="startRcptBtn">Start / Load</button>
+          <button class="primary" id="finalizeRcptBtn">Finalize (update inventory + log TVA)</button>
+          <button class="danger" id="deleteRcptBtn">Delete Delivery</button>
+        </div>
+        <div class="hint" style="margin-top:8px;" id="rcptHint">Start → add lines → Finalize.</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="linesAddTitle">Add Lines</div>
+        <div class="row">
+          <select id="lineItemSelect"></select>
+          <select id="lineUom">
+            <option value="piece">Piece</option>
+            <option value="case">Case</option>
+          </select>
+          <input id="lineExpected" type="number" min="0" step="1" placeholder="Expected qty" />
+          <input id="lineReceived" type="number" min="0" step="1" placeholder="Received qty" />
+          <input id="lineUnitCost" type="number" min="0" step="0.01" placeholder="Unit cost (this receipt)" />
+          
+          <input id="lineExp" type="date" />
+<button class="primary" id="addLineBtn">Add Line</button>
+        </div>
+
+        <div class="hint" style="margin-top:10px;" id="bulkHint">
+          Paste format: <span class="pill">Item Name, Expected, Received, UnitCost, ExpDate</span> (UnitCost & ExpDate optional)
+        </div>
+        <textarea id="bulkPaste" placeholder="Coke, 10, 10, 0.80&#10;Napkins, 2, 1&#10;Sauce, 5, 5, 0.12"></textarea>
+        <div class="row" style="margin-top:8px;">
+          <button class="primary" id="bulkImportBtn">Import Lines</button>
+          <button class="danger" id="clearLinesBtn">Clear Lines</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="rcptLinesTitle">Receipt Lines</div>
+        <table>
+          <thead>
+            <tr>
+              <th id="thRItem">Item</th><th id="thRExpDate">Exp Date</th><th id="thRExp">Expected</th><th id="thRRec">Received</th><th id="thRCost">Unit Cost</th>
+              <th id="thRDiff">Diff</th><th id="thRMissD">Missing $</th><th id="thRStatus">Status</th><th id="thRAction">Action</th>
+            </tr>
+          </thead>
+          <tbody id="linesTbody"></tbody>
+        </table>
+        <div class="hint" id="rcptSummary"></div>
+      </div>
+    </section>
+    <!-- INVENTORY -->
+    <section class="panel hidden" id="inventory">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="invTitle">Inventory</div>
+        <div class="row">
+          <input id="invSearch" placeholder="Search item..." />
+          <div class="spacer"></div>
+          <div class="hint" id="invHint">Totals across all deliveries (batches).</div>
+        </div>
+        <div class="tableWrap">
+          <table class="table" id="invTable">
+            <thead>
+              <tr>
+                <th id="invThItem">Item</th>
+                <th id="invThCases">Cases</th><th id="invThPieces">Pieces</th>
+                <th id="invThUnit">Unit</th>
+                <th id="invThAvgCost">Avg Cost</th>
+                <th id="invThValue">Total Value</th>
+                <th id="invThNextExp">Next Exp</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- SALES -->
+    <section class="panel hidden" id="sales">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="salesTitle">Record Sale</div>
+        <div class="row">
+          <input id="sDate" type="date" />
+          <select id="saleItemSelect"></select>
+          <select id="sUom">
+            <option value="piece">Piece</option>
+            <option value="case">Case</option>
+          </select>
+          <input id="sQty" type="number" min="1" step="1" placeholder="Qty sold" />
+          <input id="sPrice" type="number" min="0" step="0.01" placeholder="Sell price (per unit)" />
+          <button class="primary" id="addSaleBtn">Add Sale</button>
+        </div>
+        <div class="hint" style="margin-top:8px;" id="salesHint">
+          This auto-subtracts inventory (On-hand) and logs revenue + estimated profit.
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="muted" id="salesTodayLabel">Today Revenue</div>
+          <div class="kpi" id="salesTodayRevenue">$0.00</div>
+          <div class="muted" id="salesTodayProfit">Today Profit (est): $0.00</div>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="salesChartTitle">Sales ($) by Day</div>
+          <canvas id="chartSales2" width="900" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="salesLogTitle">Sales Log</div>
+        <table>
+          <thead>
+            <tr>
+              <th id="thSDate">Date</th><th id="thSItem">Item</th><th id="thSQty">Qty</th><th id="thSPrice">Price</th>
+              <th id="thSRev">Revenue</th><th id="thSCogs">Cost</th><th id="thSProf">Profit</th><th id="thSAct">Action</th>
+            </tr>
+          </thead>
+          <tbody id="salesTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TVA -->
+    <section class="panel hidden" id="tva">
+      <div class="grid">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="tvaControlsTitle">TVA Controls</div>
+          <div class="row">
+            <input id="tvaTarget" type="number" step="0.01" min="0" placeholder="Daily TVA Target ($)" />
+            <button class="primary" id="saveTargetBtn">Save Target</button>
+          </div>
+          <div class="hint" style="margin-top:8px;" id="tvaControlsHint">Target is per-day. Actual is from finalized receipts.</div>
+          <div style="height:10px"></div>
+          <div class="muted" id="tvaTodayLabel">Today</div>
+          <div class="kpi" id="tvaActualKpi">$0.00</div>
+          <div class="row">
+            <span class="pill" id="tvaTargetPill">Target: $0.00</span>
+            <span class="pill" id="tvaVarPill">Variance: $0.00</span>
+            <span class="pill" id="tvaEffPill">Efficiency: 100%</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="tvaChartTitle">TVA Actual vs Target</div>
+          <canvas id="chartTarget" width="900" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="tvaLogTitle">TVA Log</div>
+        <table>
+          <thead><tr><th id="thTDate">Date</th><th id="thTReceipt">Revenue</th><th id="thTMissQ">Profit</th><th id="thTTva">Goal</th><th id="thTVar">Variance</th></tr></thead>
+          <tbody id="tvaTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- WASTE -->
+    <section class="panel hidden" id="waste">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="wasteLogTitle">Log Waste</div>
+        <div class="row">
+          <input id="wDate" type="date" />
+          <input id="wItem" list="wasteItems" placeholder="Waste item (e.g., Chicken, Fries)" />
+          <datalist id="wasteItems"></datalist>
+          <select id="wUom">
+            <option value="piece">Piece</option>
+            <option value="case">Case</option>
+          </select>
+          <input id="wQty" type="number" step="1" min="0" placeholder="Qty" />
+          <input id="wCost" type="number" step="0.01" min="0" placeholder="Cost ($) (optional)" />
+          <input id="wReason" placeholder="Reason (hold time, drop, mistake)" />
+          <button class="primary" id="addWasteBtn">Add</button>
+        </div>
+        <div class="hint" style="margin-top:8px;" id="wasteHint">If cost is blank, it logs $0 (still tracks qty).</div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="wasteChartTitle">Waste ($) by Day</div>
+          <canvas id="chartWaste" width="900" height="260"></canvas>
+        </div>
+        <div class="card">
+          <div class="muted" id="wasteTodayLabel">Today Waste ($)</div>
+          <div class="kpi" id="wasteToday">$0.00</div>
+          <div class="muted" id="wasteTodayQty">Qty (pcs): 0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="wasteTableTitle">Waste Log</div>
+        <table>
+          <thead><tr><th id="thWDate">Date</th><th id="thWItem">Item</th><th id="thWQty">Qty</th><th id="thWCost">$</th><th id="thWReason">Reason</th><th id="thWAction">Action</th></tr></thead>
+          <tbody id="wasteTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+<!-- ALL LOGS -->
+    <section class="panel hidden" id="allLogs">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="allLogsTitle">All Logs</div>
+
+        <div class="row">
+          <label class="muted" id="allLogsFilterLabel" for="allLogsFilter" style="font-size:12px;">Show</label>
+          <select id="allLogsFilter">
+            <option value="all">All</option>
+            <option value="deliveries">Deliveries</option>
+            <option value="sales">Sales</option>
+          </select>
+          <div class="hint" id="allLogsHint">Everything is saved here after midnight.</div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="row" style="align-items:flex-end;">
+          <div>
+            <div class="muted" style="font-size:12px; margin-bottom:6px;" id="allLogsDateLabel">Date</div>
+            <input id="allLogsDatePick" type="date" />
+          </div>
+          <button class="primary" id="allLogsDateApply">View</button>
+          <button id="allLogsDateClear">All</button>
+          <div class="hint" id="allLogsDateHint" style="flex:1;">Pick a date to view that day’s totals.</div>
+        </div>
+
+        <div style="height:10px"></div>
+        <div class="row" id="allLogsDatesRow" style="gap:8px;"></div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="muted" id="allLogsSumTitle">Selected Day Summary</div>
+          <div class="row" style="margin-top:8px; gap:16px;">
+            <div>
+              <div class="muted" style="font-size:12px;" id="allLogsSumRevLbl">Revenue</div>
+              <div class="kpi" style="font-size:20px" id="allLogsSumRev">$0.00</div>
+            </div>
+            <div>
+              <div class="muted" style="font-size:12px;" id="allLogsSumProfLbl">Profit</div>
+              <div class="kpi" style="font-size:20px" id="allLogsSumProf">$0.00</div>
+            </div>
+            <div>
+              <div class="muted" style="font-size:12px;" id="allLogsSumWasteLbl">Waste</div>
+              <div class="kpi" style="font-size:20px" id="allLogsSumWaste">$0.00</div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px; gap:10px; flex-wrap:wrap;">
+            <span class="pill" id="allLogsSumGoal">Goal: $0.00</span>
+            <span class="pill" id="allLogsSumVar">Variance: $0.00</span>
+            <span class="pill" id="allLogsSumMissing">Delivery Missing: $0.00</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="muted" id="allLogsSumNote">Tip</div>
+          <div class="hint" id="allLogsSumNote2" style="margin-top:8px;">Click a date pill to jump. “All” shows everything.</div>
+        </div>
+      </div>
+
+      <div class="card" id="allLogsDeliveriesCard">
+        <div style="font-weight:800; margin-bottom:8px;" id="allLogsDeliveriesTitle">Delivery Logs</div>
+        <table>
+          <thead>
+            <tr>
+              <th id="thALDDate">Date</th>
+              <th id="thALDCode">Receipt</th>
+              <th id="thALDLines">Lines</th>
+              <th id="thALDMissing">Missing $</th>
+              <th id="thALDDetails">Details</th>
+            </tr>
+          </thead>
+          <tbody id="allLogsDeliveriesTbody"></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="allLogsSalesCard">
+        <div style="font-weight:800; margin-bottom:8px;" id="allLogsSalesTitle">Sales Logs</div>
+        <table>
+          <thead>
+            <tr>
+              <th id="thALSDate">Date</th><th id="thALSItem">Item</th><th id="thALSQty">Qty</th><th id="thALSPrice">Price</th>
+              <th id="thALSRev">Revenue</th><th id="thALSCogs">Cost</th><th id="thALSProf">Profit</th>
+            </tr>
+          </thead>
+          <tbody id="allLogsSalesTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+
+
+
+    
+    <!-- MONTH -->
+    <section class="panel hidden" id="month">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="monthTitle">Month</div>
+        <div class="row" style="align-items:flex-end;">
+          <div>
+            <div class="muted" style="font-size:12px; margin-bottom:6px;" id="monthPickLabel">Month</div>
+            <input id="monthPick" type="month" />
+          </div>
+          <button class="primary" id="monthPrevBtn">◀</button>
+          <button class="primary" id="monthNextBtn">▶</button>
+          <button id="monthThisBtn">This month</button>
+          <button class="primary" id="monthPrintBtn">🖨 Print</button>
+          <div class="hint" id="monthHint" style="flex:1;">Totals + graphs for the selected month.</div>
+        </div>
+
+        <div style="height:10px"></div>
+        <div class="row" id="monthPillsRow" style="gap:8px; flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <div class="muted" id="monthRevLbl">Month Revenue</div>
+          <div class="kpi" id="monthRev">$0.00</div>
+          <div class="muted" id="monthProfLbl2">Month Profit (est): $0.00</div>
+        </div>
+        <div class="card">
+          <div class="muted" id="monthSpendLbl">Product Spend (receipts)</div>
+          <div class="kpi" id="monthSpend">$0.00</div>
+          <div class="muted" id="monthWasteLbl2">Month Waste: $0.00</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="monthSalesChartTitle">Revenue ($) by Day (This Month)</div>
+          <canvas id="chartMonthRevenue" width="900" height="260"></canvas>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="monthProfitChartTitle">Profit ($) by Day (This Month)</div>
+          <canvas id="chartMonthProfit" width="900" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="monthSpendChartTitle">Product Spend ($) by Day (This Month)</div>
+          <canvas id="chartMonthSpend" width="900" height="260"></canvas>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px;" id="monthWasteChartTitle">Waste ($) by Day (This Month)</div>
+          <canvas id="chartMonthWaste" width="900" height="260"></canvas>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- BACKUP -->
+    <section class="panel hidden" id="backup">
+      <div class="card">
+        <div style="font-weight:800; margin-bottom:8px;" id="backupTitle">Backup / Restore</div>
+        <div class="row">
+          <button class="primary" id="exportBtn">Export JSON</button>
+          <button class="primary" id="importBtn">Import JSON</button>
+          <input id="importFile" type="file" accept="application/json" class="hidden" />
+          <button class="danger" id="wipeBtn">Wipe All Data</button>
+        </div>
+        <div class="hint" style="margin-top:8px;" id="backupHint">Export weekly so you never lose it.</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+
+  const KEY = "par_ops_v3_sales";
+  const LANG_KEY = "par_ops_lang";
+  const CURRENCY_KEY = "par_ops_currency";
+  // ACCESS CONTROL (basic)
+  // NOTE: This is *not* secure if employees can view the page source.
+  // For real security, put authentication + data behind a server.
+  const AUTH_KEY = "par_ops_admin_unlocked";
+  const ADMIN_PIN = "387279"; // <-- CHANGE THIS 6-digit code before using
+
+  function isUnlocked(){ return sessionStorage.getItem(AUTH_KEY) === "1"; }
+  function setUnlocked(v){
+    if(v) sessionStorage.setItem(AUTH_KEY, "1");
+    else sessionStorage.removeItem(AUTH_KEY);
+  }
+
+
+  const I18N = {
+    en: {
+      language:"Language",
+      brandSub:"Inventory • TVA • Sales",
+      sidebarHint:"Runs offline • Saves on this device",
+      topHint:"Tip: Export backup weekly",
+      nav:{dash:"Dashboard", items:"Items", receive:"Receive", sales:"Sales", tva:"Goals", waste:"Waste", allLogs:"All Logs", month:"Month", backup:"Backup", inventory:"Inventory"},
+      page:{
+        dash:{title:"Dashboard", hint:"Today totals + graphs."},
+        items:{title:"Items", hint:"Track on-hand, par, expiration."},
+        receive:{title:"Receive", hint:"Receipt lines + costs + finalize."},
+        sales:{title:"Sales", hint:"Log sales → auto subtract inventory."},
+        tva:{title:"Goals", hint:"Set daily profit goal + track progress."},
+        waste:{title:"Waste", hint:"Waste log + daily totals."},
+        inventory:{title:"Inventory", hint:"Totals across all deliveries (batches)."},
+        allLogs:{title:"All Logs", hint:"View all deliveries + sales history."},
+        month:{title:"Month", hint:"Month totals + month-only graphs."},
+        backup:{title:"Backup", hint:"Export/Import JSON."}
+      }
+    },
+    es: {
+      language:"Idioma",
+      brandSub:"Inventario • TVA • Ventas",
+      sidebarHint:"Funciona sin internet • Guarda en este dispositivo",
+      topHint:"Tip: Exporta el respaldo cada semana",
+      nav:{dash:"Panel", items:"Artículos", receive:"Recepción", sales:"Ventas", tva:"Goals", waste:"Merma", allLogs:"Todos", month:"Mes", backup:"Respaldo", inventory:"Inventario"},
+      page:{
+        dash:{title:"Panel", hint:"Totales de hoy + gráficas."},
+        items:{title:"Artículos", hint:"En mano, par, caducidad."},
+        receive:{title:"Recepción", hint:"Líneas + costos + finalizar."},
+        sales:{title:"Ventas", hint:"Registra ventas → resta inventario."},
+        tva:{title:"Metas", hint:"Meta diaria de ganancia + progreso."},
+        waste:{title:"Merma", hint:"Historial + totales diarios."},
+        inventory:{title:"Inventario", hint:"Totales de todas las entregas (lotes)."},
+        allLogs:{title:"Todos", hint:"Ver historial de entregas + ventas."},
+        backup:{title:"Respaldo", hint:"Exportar/Importar JSON."}
+      }
+    }
+  };
+
+  let lang = localStorage.getItem(LANG_KEY) || "en";
+  let currency = localStorage.getItem(CURRENCY_KEY) || (lang==="es" ? "MXN" : "USD");
+  function L(){ return I18N[lang] || I18N.en; }
+
+  function currencyLocale(){
+    // Use Spanish (Mexico) formatting when in ES, otherwise user's browser locale
+    return (lang==="es") ? "es-MX" : undefined;
+  }
+  function setCurrencyFromLang(){
+    currency = (lang==="es") ? "MXN" : "USD";
+    localStorage.setItem(CURRENCY_KEY, currency);
+  }
+
+
+  function defaultDB(){
+    return {
+      items: [],
+      receipts: [],
+      tvaLog: [],
+      tvaTargetByDate: {},
+      waste: [],
+      sales: [],
+      salesActive: [],
+      receiptsActiveCodes: []
+    ,
+      batches: []
+    };
+  }
+function loadDB(){
+    try{ const raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : defaultDB(); }
+    catch{ return defaultDB(); }
+  }
+  function saveDB(){ localStorage.setItem(KEY, JSON.stringify(db)); }
+
+  const $ = (id)=>document.getElementById(id);
+  const todayISO = ()=>{
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`; // LOCAL date
+};
+  $("rcptDate").value = todayISO();
+  $("wDate").value = todayISO();
+  $("sDate").value = todayISO();
+  try{ $("allLogsDatePick").value = todayISO(); }catch{}
+
+  function uid(){ return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16); }
+  function num(n){ return Number(n||0); }
+  function packQtyForItem(it){ return Math.max(1, Math.floor(num(it?.packQty) || 1)); }
+  function money(n){ return (num(n)).toLocaleString(currencyLocale(),{style:"currency",currency:currency}); }
+  function fmtQty(n){
+    const v = num(n);
+    // show up to 3 decimals but trim trailing zeros
+    const s = v.toFixed(3).replace(/\.?(0+)$/,"");
+    return s;
+  }
+
+  function fmtWasteQty(w){
+    const uom = (w?.uom==="case" || w?.uom==="piece") ? w.uom : "piece";
+    const q = (w?.qtyUom!=null) ? num(w.qtyUom) : num(w.qty); // backward compatible
+    const label = (uom==="case" ? (lang==="es"?"cajas":"cases") : (lang==="es"?"pzs":"pcs"));
+    return `${q} ${label}`;
+  }
+  function esc(s){
+    return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  // EXPIRATION
+  function daysUntil(dateStr){
+    if(!dateStr) return null;
+    const today = new Date(todayISO() + "T00:00:00");
+    const d = new Date(dateStr + "T00:00:00");
+    return Math.floor((d - today) / (1000*60*60*24));
+  }
+  function expirationPill(expDate){
+    if(!expDate) return { cls:"pill", text:"—", isExpired:false };
+    const d = daysUntil(expDate);
+    if(d < 0) return { cls:"pill bad", text:(lang==="es"?`CADUCADO (${expDate})`:`EXPIRED (${expDate})`), isExpired:true };
+    if(d <= 3) return { cls:"pill warn", text:(lang==="es"?`Pronto (${d}d)`:`Soon (${d}d)`), isExpired:false };
+    return { cls:"pill ok", text:expDate, isExpired:false };
+  }
+
+
+  // BATCH / LOT INVENTORY (per-delivery expiration + cost)
+  function normDate(d){ return d ? String(d) : ""; }
+  function batchSortKey(b){
+    const rd = normDate(b.receivedDate) || "9999-12-31";
+    const ed = normDate(b.expDate) || "9999-12-31";
+    return rd + "|" + ed;
+  }
+  function availableQty(itemId){
+    if(!Array.isArray(db.batches) || db.batches.length===0){
+      const it = db.items.find(x=>x.id===itemId);
+      return it ? num(it.onHand) : 0;
+    }
+    return db.batches.filter(b=>b.itemId===itemId).reduce((s,b)=>s+num(b.qtyRemaining),0);
+  }
+  function recomputeItemOnHand(itemId){
+    const it = db.items.find(x=>x.id===itemId);
+    if(!it) return;
+    it.onHand = Math.max(0, availableQty(itemId));
+  }
+  
+  function recomputeAvgCostFromBatches(itemId){
+    const it = db.items.find(x=>x.id===itemId);
+    if(!it) return;
+    if(!Array.isArray(db.batches) || db.batches.length===0) return;
+    let qty=0, value=0;
+    for(const b of db.batches){
+      if(b.itemId!==itemId) continue;
+      const q = Math.max(0, num(b.qtyRemaining));
+      if(q<=0) continue;
+      qty += q;
+      value += q * Math.max(0, num(b.unitCost));
+    }
+    if(qty>0){
+      const avg = value/qty;
+      if(Number.isFinite(avg)) it.cost = avg;
+    }
+  }
+
+  function batchIdForLine(receiptCode, lineId){
+    return `rcpt:${receiptCode}:${lineId}`;
+  }
+
+  function syncReceiptLineToBatch(receipt, line){
+    const it = db.items.find(x=>x.id===line.itemId);
+    if(!it) return;
+
+    if(!line.id) line.id = uid();
+    const uom = (line.uom==="case" || line.uom==="piece") ? line.uom : "piece";
+    const pack = packQtyForItem(it);
+    const receivedUom = Math.max(0, num(line.received));
+    const expectedUom = Math.max(0, num(line.expected));
+    const received = receivedUom * (uom==="case" ? pack : 1); // stored in pieces
+    const expDate = String(line.expDate||"").trim();
+    const unitCostEntered = Math.max(0, num(line.unitCost)); // cost per entered uom
+    const unitCostPerPiece = unitCostEntered>0 ? (uom==="case" ? (unitCostEntered/pack) : unitCostEntered) : Math.max(0, num(it.cost));
+
+    const bid = batchIdForLine(receipt.code, line.id);
+    let b = (db.batches||[]).find(x=>x.id===bid);
+
+    if(received<=0){
+      if(b){
+        const idx = db.batches.findIndex(x=>x.id===bid);
+        if(idx>=0) db.batches.splice(idx,1);
+        recomputeItemOnHand(it.id);
+        recomputeAvgCostFromBatches(it.id);
+      }
+      return;
+    }
+
+    if(!b){
+      b = {
+        id: bid,
+        itemId: it.id,
+        itemName: it.name,
+        receiptCode: receipt.code,
+        receivedDate: receipt.date || todayISO(),
+        expDate,
+        qty: received,
+        qtyRemaining: received,
+        unitCost: Math.max(0, unitCostPerPiece)
+      };
+      db.batches.unshift(b);
+    } else {
+      const consumed = Math.max(0, num(b.qty) - num(b.qtyRemaining));
+      b.receivedDate = receipt.date || b.receivedDate || todayISO();
+      b.expDate = expDate;
+      b.unitCost = Math.max(0, unitCostPerPiece);
+      b.qty = received;
+      b.qtyRemaining = Math.max(0, received - consumed);
+    }
+
+    recomputeItemOnHand(it.id);
+    recomputeAvgCostFromBatches(it.id);
+  }
+
+  function removeBatchForReceiptLine(receiptCode, lineId){
+    const bid = batchIdForLine(receiptCode, lineId);
+    const idx = (db.batches||[]).findIndex(x=>x.id===bid);
+    if(idx>=0){
+      const itemId = db.batches[idx].itemId;
+      db.batches.splice(idx,1);
+      recomputeItemOnHand(itemId);
+      recomputeAvgCostFromBatches(itemId);
+    }
+  }
+
+  function nextExpForItem(itemId){
+    const batches = (db.batches||[]).filter(b=>b.itemId===itemId && num(b.qtyRemaining)>0 && b.expDate);
+    if(batches.length===0) return "";
+    batches.sort((a,b)=> (normDate(a.expDate)||"9999-12-31").localeCompare(normDate(b.expDate)||"9999-12-31"));
+    return normDate(batches[0].expDate);
+  }
+  function consumeFromBatches(itemId, qty){
+    qty = Math.max(0, num(qty));
+    if(qty<=0) return { ok:true, qtyTaken:0, totalCost:0 };
+
+    // If no batches exist (old data), fall back to item-level onHand/cost.
+    if(!Array.isArray(db.batches) || db.batches.length===0){
+      const it = db.items.find(x=>x.id===itemId);
+      const have = it ? num(it.onHand) : 0;
+      if(have < qty) return { ok:false, qtyTaken:0, totalCost:0 };
+      const cost = it ? num(it.cost) : 0;
+      if(it) it.onHand = Math.max(0, have - qty);
+      return { ok:true, qtyTaken:qty, totalCost: qty * cost };
+    }
+
+    const batches = db.batches
+      .filter(b=>b.itemId===itemId && num(b.qtyRemaining)>0)
+      .sort((a,b)=>batchSortKey(a).localeCompare(batchSortKey(b)));
+
+    let remaining = qty;
+    let totalCost = 0;
+    const touched = [];
+    for(const b of batches){
+      if(remaining<=0) break;
+      const take = Math.min(num(b.qtyRemaining), remaining);
+      if(take<=0) continue;
+      touched.push([b, take]);
+      remaining -= take;
+    }
+    if(remaining>0) return { ok:false, qtyTaken:0, totalCost:0 };
+
+    // Commit consumption
+    for(const [b,take] of touched){
+      b.qtyRemaining = Math.max(0, num(b.qtyRemaining) - take);
+      totalCost += take * Math.max(0, num(b.unitCost));
+    }
+    recomputeItemOnHand(itemId);
+    return { ok:true, qtyTaken:qty, totalCost };
+  }
+
+  
+  // Quick keyboard toggle: type "es" to switch to Español + MXN, type "en" to switch back to English + USD.
+  (function(){
+    let buf = "";
+    let last = 0;
+    document.addEventListener("keydown",(e)=>{
+      // ignore if typing in inputs/textareas/selects
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+      if(tag==="input" || tag==="textarea" || tag==="select") return;
+
+      const k = (e.key||"").toLowerCase();
+      if(k.length!==1 || k<"a" || k>"z") return;
+
+      const now = Date.now();
+      if(now - last > 900) buf = "";
+      last = now;
+
+      buf = (buf + k).slice(-2);
+      if(buf==="es"){
+        lang = "es";
+        localStorage.setItem(LANG_KEY, lang);
+        setCurrencyFromLang();
+        applyLang();
+        renderAll();
+      }else if(buf==="en"){
+        lang = "en";
+        localStorage.setItem(LANG_KEY, lang);
+        setCurrencyFromLang();
+        applyLang();
+        renderAll();
+      }
+    });
+  })();
+
+// NAV
+  let currentTab = "dash";
+  let allLogsSelectedDate = ""; // YYYY-MM-DD or "" for all
+  let monthSelected = ""; // YYYY-MM (view)
+
+  document.getElementById("nav").addEventListener("click",(e)=>{
+    const btn = e.target.closest("button[data-tab]");
+    if(!btn) return;
+    const tab = btn.dataset.tab;
+    // ACCESS GUARD: when locked, only allow Sales tab
+    if(!isUnlocked() && tab !== "sales"){
+      return;
+    }
+    currentTab = tab;
+    document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));
+    document.getElementById(tab).classList.remove("hidden");
+    applyLang();
+    renderAll();
+  });
+
+  
+  
+  function applyAccessControl(){
+    const unlocked = isUnlocked();
+
+    // Add a body class so CSS can hide/show sidebar chips (numbers)
+    document.body.classList.toggle("locked", !unlocked);
+
+    // Show only Sales for employees (locked mode)
+    document.querySelectorAll('#nav button[data-tab]').forEach(btn=>{
+      const tab = btn.dataset.tab;
+      if(!unlocked && tab !== "sales") btn.classList.add("hidden");
+      else btn.classList.remove("hidden");
+    });
+
+    // Toggle auth buttons
+    const loginBtn = $("loginBtn");
+    const logoutBtn = $("logoutBtn");
+    if(loginBtn){
+      loginBtn.textContent = unlocked ? (lang==="es"?"Admin":"Admin") : (lang==="es"?"Iniciar sesión":"Login");
+    }
+    if(logoutBtn){
+      logoutBtn.classList.toggle("hidden", !unlocked);
+      logoutBtn.textContent = (lang==="es"?"Cerrar sesión":"Logout");
+    }
+
+    // In locked mode, hide cost/profit columns on Sales screen
+    const hideFinancials = !unlocked;
+    ["salesTodayProfit","thSCogs","thSProf"].forEach(id=>{
+      const el = $(id);
+      if(el) el.style.display = hideFinancials ? "none" : "";
+    });
+
+    // If locked, force Sales tab
+    if(!unlocked && currentTab !== "sales"){
+      const salesBtn = document.querySelector('#nav button[data-tab="sales"]');
+      if(salesBtn) salesBtn.click();
+    }
+  }
+
+  // Login / Logout
+  $("loginBtn")?.addEventListener("click", ()=>{
+    if(isUnlocked()){
+      alert(lang==="es" ? "Ya está desbloqueado." : "Already unlocked.");
+      return;
+    }
+    const pin = prompt(lang==="es" ? "Código admin (6 dígitos):" : "Admin code (6 digits):");
+    if(pin === null) return;
+    if(String(pin).trim() === ADMIN_PIN){
+      setUnlocked(true);
+      applyAccessControl();
+      renderAll();
+      alert(lang==="es" ? "Desbloqueado." : "Unlocked.");
+    }else{
+      alert(lang==="es" ? "Código incorrecto." : "Wrong code.");
+    }
+  });
+
+  $("logoutBtn")?.addEventListener("click", ()=>{
+    setUnlocked(false);
+    applyAccessControl();
+    renderAll();
+  });
+
+
+// ALL LOGS date controls
+  function setAllLogsDate(d){
+    allLogsSelectedDate = String(d||"").trim();
+    try{ const inp = $("allLogsDatePick"); if(inp) inp.value = allLogsSelectedDate || ""; }catch{}
+  }
+  document.addEventListener("click",(e)=>{
+    const pill = e.target.closest("button[data-alldate]");
+    if(pill){
+      setAllLogsDate(pill.dataset.alldate||"");
+      renderAllLogs();
+      try{ requestAnimationFrame(()=>requestAnimationFrame(renderCharts)); }catch{}
+    }
+  });
+  const _alApply = $("allLogsDateApply");
+  if(_alApply){
+    _alApply.addEventListener("click", ()=>{
+      setAllLogsDate($("allLogsDatePick")?.value || "");
+      renderAllLogs();
+    });
+  }
+  const _alClear = $("allLogsDateClear");
+  if(_alClear){
+    _alClear.addEventListener("click", ()=>{
+      setAllLogsDate("");
+      renderAllLogs();
+    });
+  }
+
+// MONTH controls
+const MONTH_VIEW_KEY = "par_ops_month_view";
+const MONTH_LAST_SEEN_KEY = "par_ops_month_last_seen";
+
+function monthISOFromDate(dateIso){ return String(dateIso||"").slice(0,7); }
+function currentMonthISO(){ return todayISO().slice(0,7); }
+
+function setMonthSelected(m){
+  monthSelected = String(m||"").slice(0,7);
+  try{ const inp = $("monthPick"); if(inp) inp.value = monthSelected || ""; }catch{}
+  localStorage.setItem(MONTH_VIEW_KEY, monthSelected);
+  renderMonth();
+}
+
+function shiftMonth(ym, delta){
+  const [y,m] = String(ym||"").split("-").map(x=>parseInt(x,10));
+  if(!y || !m) return currentMonthISO();
+  const d = new Date(y, m-1 + delta, 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  return `${yyyy}-${mm}`;
+}
+
+function monthsAvailable(){
+  const set = new Set();
+  for(const s of (db.sales||[])) if(s?.date) set.add(monthISOFromDate(s.date));
+  for(const w of (db.waste||[])) if(w?.date) set.add(monthISOFromDate(w.date));
+  for(const r of (db.receipts||[])) if(r?.date) set.add(monthISOFromDate(r.date));
+  // Always include current month so it shows even if empty
+  set.add(currentMonthISO());
+  const arr = [...set].filter(Boolean).sort().reverse();
+  return arr.slice(0,24); // keep UI light (last ~2 years)
+}
+
+function monthRange(ym){
+  const [y,m] = String(ym||"").split("-").map(x=>parseInt(x,10));
+  const start = new Date(y, (m||1)-1, 1);
+  const end = new Date(y, (m||1), 0); // last day of month
+  const s = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,"0")}-01`;
+  const e = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,"0")}-${String(end.getDate()).padStart(2,"0")}`;
+  return { start:s, end:e };
+}
+
+function inRange(d, start, end){
+  const x = String(d||"");
+  return x && x >= start && x <= end;
+}
+
+function receiptSpendByDay(start, end){
+  // Returns map day->spend dollars (based on RECEIVED qty * unit cost per piece)
+  const out = new Map();
+  const receipts = (db.receipts||[]).filter(r=>inRange(r.date, start, end));
+  for(const r of receipts){
+    const day = r.date;
+    let sum = 0;
+    for(const line of (r.lines||[])){
+      const it = db.items.find(x=>x.id===line.itemId);
+      const pack = packQtyForItem(it||{});
+      const uom = (line.uom==="case" || line.uom==="piece") ? line.uom : "piece";
+      const receivedUom = Math.max(0, num(line.received));
+      const receivedPieces = receivedUom * (uom==="case" ? pack : 1);
+      if(receivedPieces<=0) continue;
+
+      // unitCost is stored per entered uom on the receipt line
+      let unitCostEntered = Math.max(0, num(line.unitCost));
+      let unitCostPerPiece = 0;
+      if(unitCostEntered>0){
+        unitCostPerPiece = (uom==="case" ? (unitCostEntered/pack) : unitCostEntered);
+      }else{
+        unitCostPerPiece = Math.max(0, num(it?.cost||0));
+      }
+      sum += receivedPieces * unitCostPerPiece;
+    }
+    out.set(day, (out.get(day)||0) + sum);
+  }
+  return out;
+}
+
+function renderMonth(){
+  if(!$("month")) return;
+
+  // Auto-reset view when the real month rolls over
+  const cm = currentMonthISO();
+  const lastSeen = localStorage.getItem(MONTH_LAST_SEEN_KEY) || "";
+  if(lastSeen !== cm){
+    localStorage.setItem(MONTH_LAST_SEEN_KEY, cm);
+    // If they were looking at last month's view, switch to current month (fresh start)
+    monthSelected = cm;
+    localStorage.setItem(MONTH_VIEW_KEY, monthSelected);
+  }
+
+  if(!monthSelected){
+    monthSelected = localStorage.getItem(MONTH_VIEW_KEY) || cm;
+  }
+  // Keep input in sync
+  try{ $("monthPick").value = monthSelected; }catch{}
+
+  const {start, end} = monthRange(monthSelected);
+
+  const sales = (db.sales||[]).filter(s=>inRange(s.date, start, end));
+  const waste = (db.waste||[]).filter(w=>inRange(w.date, start, end));
+  const spendMap = receiptSpendByDay(start, end);
+
+  const rev = sales.reduce((s,x)=>s+num(x.revenue),0);
+  const prof = sales.reduce((s,x)=>s+num(x.profit),0);
+  const wasteD = waste.reduce((s,x)=>s+num(x.cost),0);
+  const spend = [...spendMap.values()].reduce((s,x)=>s+num(x),0);
+
+  $("monthRev").textContent = money(rev);
+  $("monthProfLbl2").textContent = (lang==="es"?"Ganancia del mes (est): ":"Month Profit (est): ") + money(prof);
+  $("monthSpend").textContent = money(spend);
+  $("monthWasteLbl2").textContent = (lang==="es"?"Merma del mes: ":"Month Waste: ") + money(wasteD);
+
+  // Month pill shortcuts
+  const row = $("monthPillsRow");
+  if(row){
+    row.innerHTML = "";
+    for(const ym of monthsAvailable()){
+      const b = document.createElement("button");
+      b.textContent = ym;
+      b.className = "pill " + (ym===monthSelected ? "ok" : "");
+      b.setAttribute("data-month", ym);
+      row.appendChild(b);
+    }
+  }
+
+  // Chip in sidebar
+  try{ $("chipMonth").textContent = money(rev); }catch{}
+
+  renderMonthCharts(start, end, sales, waste, spendMap);
+}
+
+function renderMonthCharts(start, end, salesList, wasteList, spendMap){
+  const sales = groupDaily(salesList, "revenue");
+  drawLine($("chartMonthRevenue"), sales.days, sales.vals, "$");
+
+  const profit = groupDaily(salesList, "profit");
+  drawLine($("chartMonthProfit"), profit.days, profit.vals, "$");
+
+  const waste = groupDaily(wasteList, "cost");
+  drawLine($("chartMonthWaste"), waste.days, waste.vals, "$");
+
+  // Spend series
+  const days = [];
+  const vals = [];
+  // Build days list from start->end (ISO)
+  const sd = new Date(start+"T00:00:00");
+  const ed = new Date(end+"T00:00:00");
+  for(let d=new Date(sd); d<=ed; d.setDate(d.getDate()+1)){
+    const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    days.push(iso);
+    vals.push(num(spendMap.get(iso) || 0));
+  }
+  drawLine($("chartMonthSpend"), days, vals, "$");
+}
+
+// Month UI listeners
+const _mp = $("monthPick");
+if(_mp){
+  _mp.addEventListener("change", ()=> setMonthSelected(_mp.value || currentMonthISO()));
+}
+const _mPrev = $("monthPrevBtn");
+if(_mPrev){ _mPrev.addEventListener("click", ()=> setMonthSelected(shiftMonth(monthSelected||currentMonthISO(), -1))); }
+const _mNext = $("monthNextBtn");
+if(_mNext){ _mNext.addEventListener("click", ()=> setMonthSelected(shiftMonth(monthSelected||currentMonthISO(), +1))); }
+const _mThis = $("monthThisBtn");
+if(_mThis){ _mThis.addEventListener("click", ()=> setMonthSelected(currentMonthISO())); }
+
+const _mPrint = $("monthPrintBtn");
+function printMonth(){
+  const prev = currentTab || "dash";
+  if(prev !== "month"){
+    const btn = document.querySelector('button[data-tab="month"]');
+    if(btn) btn.click();
+  }
+  document.body.classList.add("print-month");
+
+  const restore = ()=>{
+    document.body.classList.remove("print-month");
+    window.removeEventListener("afterprint", restore);
+    // restore previous tab
+    if(prev && prev !== "month"){
+      const b = document.querySelector(`button[data-tab="${prev}"]`);
+      if(b) b.click();
+    }
+  };
+  window.addEventListener("afterprint", restore);
+  // Fallback restore if afterprint doesn't fire
+  setTimeout(()=>{ 
+    if(document.body.classList.contains("print-month")) restore(); 
+  }, 1500);
+
+  setTimeout(()=>window.print(), 60);
+}
+if(_mPrint){ _mPrint.addEventListener("click", printMonth); }
+
+
+document.addEventListener("click",(e)=>{
+  const b = e.target.closest("button[data-month]");
+  if(b){ setMonthSelected(b.dataset.month); }
+});
+
+
+$("langSelect").addEventListener("change", ()=>{
+    lang = $("langSelect").value;
+    localStorage.setItem(LANG_KEY, lang);
+    setCurrencyFromLang();
+    applyLang();
+    renderAll();
+  });
+  $("invSearch")?.addEventListener("input", ()=>{ renderInventory(); });
+
+// PRINT DASHBOARD
+// Note: most browsers require this to be triggered by a user click (this is).
+const _printBtn = $("printDashBtn");
+if(_printBtn){
+  _printBtn.addEventListener("click", ()=>{
+    const prevTab = currentTab;
+
+    // Ensure dashboard is visible for print styles
+    currentTab = "dash";
+    document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+    document.querySelector('.nav button[data-tab="dash"]')?.classList.add("active");
+    document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));
+    $("dash")?.classList.remove("hidden");
+
+    // Re-render so KPIs + charts are up to date before printing
+    applyLang();
+    renderDash();
+    renderCharts();
+
+    // Let layout settle, then print
+    setTimeout(()=>{ window.print(); }, 50);
+
+    // Restore tab after printing (some browsers fire afterprint reliably)
+    window.addEventListener("afterprint", function _restore(){
+      window.removeEventListener("afterprint", _restore);
+      currentTab = prevTab;
+      document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+      document.querySelector(`.nav button[data-tab="${prevTab}"]`)?.classList.add("active");
+      document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));
+      document.getElementById(prevTab)?.classList.remove("hidden");
+      applyLang();
+      renderAll();
+    });
+  });
+}
+
+
+
+  function setText(id, en, es){
+    const el = $(id); if(!el) return;
+    el.textContent = (lang==="es" ? es : en);
+  }
+  function setPH(id, en, es){
+    const el = $(id); if(!el) return;
+    el.placeholder = (lang==="es" ? es : en);
+  }
+  function applyLang(){
+    $("langSelect").value = lang;
+    $("langLabel").textContent = L().language;
+    $("brandSub").textContent = L().brandSub;
+    $("sidebarHint").textContent = L().sidebarHint;
+    $("topHint").textContent = L().topHint;
+
+    $("navDash").textContent = L().nav.dash;
+    $("navItems").textContent = L().nav.items;
+    $("navReceive").textContent = L().nav.receive;
+    $("navInventory").textContent = L().nav.inventory;
+    $("navSales").textContent = L().nav.sales;
+    $("navTva").textContent = L().nav.tva;
+    $("navWaste").textContent = L().nav.waste;
+    $("navAllLogs").textContent = L().nav.allLogs;
+    $("navMonth").textContent = L().nav.month;
+    $("navBackup").textContent = L().nav.backup;
+
+    $("pageTitle").textContent = (L().page[currentTab]?.title || L().nav[currentTab] || "—");
+    $("pageHint").textContent = (L().page[currentTab]?.hint || "");
+
+    // DASH
+    setText("dashRevenueLabel","Today Revenue","Ventas de hoy");
+    setText("dashTvaLabel","Goal Remaining (Profit)","Falta para la meta (ganancia)");
+    setText("chartSalesTitle","Sales ($) by Day","Ventas ($) por día");
+    setText("chartTvaTitle","Profit ($) by Day","Ganancia ($) por día");
+    setText("dashInvValueLabel","Inventory Value (now)","Valor del inventario (ahora)");
+    setText("kpiInvQty","Inventory Qty (pieces): 0","Cant. inventario (piezas): 0");
+    setText("dashToolsTitle","Dashboard Tools","Herramientas del panel");
+    setText("printDashBtn","Print Dashboard","Imprimir panel");
+    setText("printHint","Tip: Use Print → “Save as PDF”.","Tip: Usa Imprimir → “Guardar como PDF”.");
+    setText("chartInvTitle","Inventory Value ($) by Day","Valor de inventario ($) por día");
+    setText("chartWasteDashTitle","Waste ($) by Day","Merma ($) por día");
+    setText("chartTargetDashTitle","Profit vs Goal","Ganancia vs meta");
+
+    // ITEMS
+    setText("itemsAddTitle","Add / Update Item","Agregar / Actualizar artículo");
+    setText("saveItemBtn","Save Item","Guardar");
+    setText("itemsAddHint",
+      "Tip: cost is average cost per piece. Receiving updates cost if you enter unit cost on the receipt line.",
+      "Tip: el costo es costo promedio por pieza. La recepción lo actualiza si ingresas el costo en la línea del recibo."
+    );
+    setText("itemsTableTitle","Items","Artículos");
+    setText("thItem","Item","Artículo");
+    setText("thSku","SKU","SKU");
+    setText("thCost","Avg Cost","Costo prom.");
+    setText("thPar","Par (cases)","Par (cajas)");
+    setText("thCases","Cases","Cajas");
+    setText("thPieces","Pieces","Piezas");
+    setText("thExp","Next Exp","Próx. venc.");
+    setText("thStatus","Status","Estado");
+    setText("thActions","Actions","Acciones");
+    setPH("itemSku","Item code/SKU (optional)","Código/SKU (opcional)");
+    setPH("itemName","Item name","Nombre del artículo");
+    setPH("itemUnit","Base unit (ea, bag, etc)","Unidad base (pz, bolsa, etc)");
+    setPH("itemPack","Pieces per case (optional)","Piezas por caja (opcional)");
+    setPH("itemCost","Avg unit cost ($)","Costo prom. por pieza ($)");
+    setPH("itemPar","Par (cases)","Par (cajas)");
+    setPH("itemOnHand","On-hand (pieces)","En mano (piezas)");
+    setPH("itemExp","Expiration date","Fecha de caducidad");
+
+    // RECEIVE
+    setText("rcptTitle","New Delivery","Nueva entrega");
+    setText("startRcptBtn","Start / Load","Iniciar / Cargar");
+    setText("finalizeRcptBtn","Finalize (update inventory + log TVA)","Finalizar (actualiza inventario + TVA)");
+    setText("deleteRcptBtn","Delete Delivery","Borrar entrega");
+    setText("rcptHint","Start → add lines → Finalize.","Inicia → agrega líneas → Finaliza.");
+    setText("linesAddTitle","Add Lines","Agregar líneas");
+    setText("addLineBtn","Add Line","Agregar");
+    setText("bulkHint","Paste format: Item Name, Expected, Received, UnitCost, ExpDate (UnitCost & ExpDate optional)",
+      "Pega formato: Nombre, Esperado, Recibido, Costo, Caducidad (Costo y Caducidad opcional)");
+    setText("bulkImportBtn","Import Lines","Importar líneas");
+    setText("clearLinesBtn","Clear Lines","Borrar líneas");
+    setText("rcptLinesTitle","Receipt Lines","Líneas del recibo");
+    setText("thRItem","Item","Artículo");
+    setText("thRExpDate","Exp Date","Caducidad");
+    setText("thRExp","Expected","Esperado");
+    setText("thRRec","Received","Recibido");
+    setText("thRCost","Unit Cost","Costo");
+    setText("thRDiff","Diff","Dif.");
+    setText("thRMissD","Missing $","Faltante $");
+    setText("thRStatus","Status","Estado");
+    setText("thRAction","Action","Acción");
+    setPH("rcptCode","Receipt / Invoice code","Código de recibo / factura");
+    setPH("lineExpected","Expected qty","Cant. esperada");
+    setPH("lineReceived","Received qty","Cant. recibida");
+    setPH("lineUnitCost","Unit cost (this line)","Costo (esta línea)");
+    // UOM selects
+    const lu = $("lineUom");
+    if(lu){
+      lu.options[0].textContent = (lang==="es"?"Pieza":"Piece");
+      lu.options[1].textContent = (lang==="es"?"Caja":"Case");
+    }
+
+    // INVENTORY
+    setText("invTitle","Inventory","Inventario");
+    setText("invHint","Totals across all deliveries (batches).","Totales de todas las entregas (lotes).");
+    setPH("invSearch","Search item...","Buscar artículo...");
+    setText("invThItem","Item","Artículo");
+    setText("invThCases","Cases","Cajas");
+    setText("invThPieces","Pieces","Piezas");
+    setText("invThUnit","Unit","Unidad");
+    setText("invThAvgCost","Avg Cost","Costo prom.");
+    setText("invThValue","Total Value","Valor total");
+    setText("invThNextExp","Next Exp","Próx. venc.");
+
+    // SALES
+    setText("salesTitle","Record Sale","Registrar venta");
+    setText("addSaleBtn","Add Sale","Agregar venta");
+    setText("salesHint","This auto-subtracts inventory and logs revenue + estimated profit.",
+      "Esto resta inventario automáticamente y guarda ventas + ganancia estimada.");
+    setText("salesTodayLabel","Today Revenue","Ventas de hoy");
+    setText("salesChartTitle","Sales ($) by Day","Ventas ($) por día");
+    setText("salesLogTitle","Sales Log","Historial de ventas");
+    setText("thSDate","Date","Fecha");
+    setText("thSItem","Item","Artículo");
+    setText("thSQty","Qty","Cant.");
+    setText("thSPrice","Price","Precio");
+    setText("thSRev","Revenue","Venta");
+    setText("thSCogs","Cost","Costo");
+    setText("thSProf","Profit","Ganancia");
+    setText("thSAct","Action","Acción");
+    setPH("sQty","Qty sold","Cant. vendida");
+    setPH("sPrice","Sell price (per unit)","Precio de venta (por unidad)");
+    const su = $("sUom");
+    if(su){
+      su.options[0].textContent = (lang==="es"?"Pieza":"Piece");
+      su.options[1].textContent = (lang==="es"?"Caja":"Case");
+    }
+
+    // TVA
+    setText("tvaControlsTitle","Goals","Metas");
+    setText("saveTargetBtn","Save Goal","Guardar meta");
+    setText("tvaControlsHint","Goal is daily PROFIT. Actual comes from Sales profit.","La meta es GANANCIA diaria. Lo real viene de la ganancia en Ventas.");
+    setText("tvaTodayLabel","Today","Hoy");
+    setText("tvaChartTitle","Profit vs Goal","Ganancia vs meta");
+    setText("tvaLogTitle","Daily Profit Log","Historial de ganancia");
+    setText("thTDate","Date","Fecha");
+    setText("thTReceipt","Revenue","Venta");
+    setText("thTMissQ","Profit","Ganancia");
+    setText("thTTva","Goal","Meta");
+    setText("thTVar","Variance","Variación");
+    setPH("tvaTarget","Daily Profit Goal ($)","Meta diaria de ganancia ($)");
+
+    // WASTE
+    setText("wasteLogTitle","Log Waste","Registrar merma");
+    setText("addWasteBtn","Add","Agregar");
+    setText("wasteHint","If cost is blank, it logs $0 (still tracks qty).","Si el costo está vacío, guarda $0 (igual cuenta cantidad).");
+    setText("wasteChartTitle","Waste ($) by Day","Merma ($) por día");
+    setText("wasteTodayLabel","Today Waste ($)","Merma de hoy ($)");
+    setText("wasteTableTitle","Waste Log","Historial de merma");
+    setText("thWDate","Date","Fecha");
+    setText("thWItem","Item","Artículo");
+    setText("thWQty","Qty","Cant.");
+    setText("thWCost","$","$");
+    setText("thWReason","Reason","Motivo");
+    setText("thWAction","Action","Acción");
+    const wu = $("wUom");
+    if(wu){
+      wu.options[0].textContent = (lang==="es"?"Pieza":"Piece");
+      wu.options[1].textContent = (lang==="es"?"Caja":"Case");
+    }
+
+    setPH("wItem","Waste item (e.g., Chicken, Fries)","Artículo (ej. Pollo, Papas)");
+    setPH("wQty","Qty","Cant.");
+    setPH("wCost","Cost ($) (optional)","Costo ($) (opcional)");
+    setPH("wReason","Reason (hold time, drop, mistake)","Motivo (tiempo, caída, error)");
+
+
+    // ALL LOGS
+    setText("allLogsTitle","All Logs","Todos");
+    setText("allLogsFilterLabel","Show","Ver");
+    const alf = $("allLogsFilter");
+    if(alf){
+      alf.options[0].textContent = (lang==="es"?"Todo":"All");
+      alf.options[1].textContent = (lang==="es"?"Entregas":"Deliveries");
+      alf.options[2].textContent = (lang==="es"?"Ventas":"Sales");
+    }
+    setText("allLogsHint","Everything is saved here after midnight.","Todo se guarda aquí después de medianoche.");
+    setText("allLogsDateLabel","Date","Fecha");
+    setText("allLogsDateApply","View","Ver");
+    setText("allLogsDateClear","All","Todo");
+    setText("allLogsDateHint","Pick a date to view that day’s totals.","Elige una fecha para ver los totales de ese día.");
+    setText("allLogsSumTitle","Selected Day Summary","Resumen del día");
+    setText("allLogsSumRevLbl","Revenue","Venta");
+    setText("allLogsSumProfLbl","Profit","Ganancia");
+    setText("allLogsSumWasteLbl","Waste","Merma");
+    setText("allLogsSumNote","Tip","Tip");
+    setText("allLogsSumNote2","Click a date pill to jump. “All” shows everything.","Haz clic en una fecha. “Todo” muestra todo.");
+
+    setText("allLogsDeliveriesTitle","Delivery Logs","Entregas");
+    setText("allLogsSalesTitle","Sales Logs","Ventas");
+    setText("thALDDate","Date","Fecha");
+    setText("thALDCode","Receipt","Recibo");
+    setText("thALDLines","Lines","Líneas");
+    setText("thALDMissing","Missing $","Faltante $");
+    setText("thALDDetails","Details","Detalles");
+    setText("thALSDate","Date","Fecha");
+    setText("thALSItem","Item","Artículo");
+    setText("thALSQty","Qty","Cant.");
+    setText("thALSPrice","Price","Precio");
+    setText("thALSRev","Revenue","Venta");
+    setText("thALSCogs","Cost","Costo");
+    setText("thALSProf","Profit","Ganancia");
+
+
+// MONTH
+setText("monthTitle","Month","Mes");
+setText("monthPickLabel","Month","Mes");
+setText("monthPrevBtn","◀","◀");
+setText("monthNextBtn","▶","▶");
+setText("monthThisBtn","This month","Este mes");
+setText("monthHint","Totals + graphs for the selected month.","Totales + gráficas del mes seleccionado.");
+setText("monthRevLbl","Month Revenue","Ventas del mes");
+setText("monthProfLbl2","Month Profit (est): $0.00","Ganancia del mes (est): $0.00");
+setText("monthSpendLbl","Product Spend (receipts)","Gasto en producto (entregas)");
+setText("monthWasteLbl2","Month Waste: $0.00","Merma del mes: $0.00");
+setText("monthSalesChartTitle","Revenue ($) by Day (This Month)","Ventas ($) por día (este mes)");
+setText("monthProfitChartTitle","Profit ($) by Day (This Month)","Ganancia ($) por día (este mes)");
+setText("monthSpendChartTitle","Product Spend ($) by Day (This Month)","Gasto ($) por día (este mes)");
+setText("monthWasteChartTitle","Waste ($) by Day (This Month)","Merma ($) por día (este mes)");
+
+    // BACKUP
+    setText("backupTitle","Backup / Restore","Respaldo / Restaurar");
+    setText("exportBtn","Export JSON","Exportar JSON");
+    setText("importBtn","Import JSON","Importar JSON");
+    setText("wipeBtn","Wipe All Data","Borrar todo");
+    setText("backupHint","Export weekly so you never lose it.","Exporta semanal para no perderlo.");
+  }
+
+
+  // DB
+  let db = loadDB();
+
+  // migrations
+  if(!db.batches) db.batches = [];
+  if(!Array.isArray(db.salesActive)) db.salesActive = [];
+  if(!Array.isArray(db.receiptsActiveCodes)) db.receiptsActiveCodes = [];
+
+  // If upgrading from older data, make sure today's entries are "active"
+  try{
+    const tday = todayISO();
+    if(db.salesActive.length===0 && Array.isArray(db.sales) && db.sales.some(s=>s.date===tday)){
+      db.salesActive = db.sales.filter(s=>s.date===tday).slice(0,500);
+    }
+    if(db.receiptsActiveCodes.length===0 && Array.isArray(db.receipts) && db.receipts.some(r=> (r.date||"")===tday)){
+      db.receiptsActiveCodes = db.receipts.filter(r=> (r.date||"")===tday).map(r=>r.code);
+    }
+  }catch{}
+  saveDB();
+// ITEMS
+  $("saveItemBtn").addEventListener("click", ()=>{
+    const sku = $("itemSku").value.trim();
+    const name = $("itemName").value.trim();
+    const unit = $("itemUnit").value.trim();
+    const packQty = Math.max(1, Math.floor(num($("itemPack").value) || 1));
+    const cost = Math.max(0, num($("itemCost").value));
+    const par = Math.max(0, num($("itemPar").value));
+    const onHand = Math.max(0, num($("itemOnHand").value));
+    const expDate = ($("itemExp")?.value || "").trim();
+if(!name){ alert(lang==="es"?"Se requiere nombre.":"Item name required."); return; }
+    if(!expDate){ alert(lang==="es"?"Se requiere fecha de caducidad.":"Expiration date required."); return; }
+
+    let it = null;
+    if(sku) it = db.items.find(x=> (x.sku||"").toLowerCase()===sku.toLowerCase());
+    if(!it) it = db.items.find(x=> x.name.toLowerCase()===name.toLowerCase());
+
+    if(!it){
+      it = { id: uid(), sku, name, unit, packQty, cost, par, onHand, defaultExp: expDate };
+      db.items.push(it);
+    }else{
+      it.sku = sku || it.sku;
+      it.name = name;
+      it.unit = unit;
+      it.packQty = packQty || it.packQty || 1;
+      it.cost = cost;
+      it.par = par;
+      it.onHand = onHand;
+      it.defaultExp = expDate;
+}
+    // Seed/Update a starting inventory batch so "Next Exp" works even before you enter deliveries.
+    // This uses the Item tab "On-hand" + Expiration date.
+    if(!Array.isArray(db.batches)) db.batches = [];
+    const initId = `init:${it.id}`;
+    const idxInit = db.batches.findIndex(b=>b.id===initId);
+    if(onHand>0){
+      const b = {
+        id: initId,
+        itemId: it.id,
+        itemName: it.name,
+        receiptCode: "INIT",
+        receivedDate: todayISO(),
+        expDate: expDate,
+        qty: onHand,
+        qtyRemaining: onHand,
+        unitCost: Math.max(0, cost)
+      };
+      if(idxInit>=0) db.batches[idxInit] = b; else db.batches.unshift(b);
+    }else{
+      if(idxInit>=0) db.batches.splice(idxInit,1);
+    }
+    recomputeItemOnHand(it.id);
+    recomputeAvgCostFromBatches(it.id);
+
+    saveDB();
+    $("itemSku").value = $("itemName").value = $("itemUnit").value = $("itemPack").value = "";
+    $("itemCost").value = $("itemPar").value = $("itemOnHand").value = "";
+    try{ $("itemExp").value = ""; }catch{}
+renderAll();
+  });
+
+  function itemStatus(it){
+    const pack = packQtyForItem(it);
+    const onHandCases = pack>0 ? (availableQty(it.id) / pack) : availableQty(it.id);
+    const parCases = num(it.par);
+    if(onHandCases < parCases) return { label:(lang==="es"?"Bajo Par":"Below Par"), cls:"bad" };
+    if(onHandCases === parCases) return { label:(lang==="es"?"En Par":"At Par"), cls:"warn" };
+    return { label:"OK", cls:"ok" };
+  }
+
+  function renderItems(){
+    const tb = $("itemsTbody");
+    tb.innerHTML = "";
+    const items = [...db.items].sort((a,b)=>a.name.localeCompare(b.name));
+    for(const it of items){
+      const st = itemStatus(it);
+      const expPill = expirationPill(nextExpForItem(it.id));
+
+      const tr = document.createElement("tr");
+      if(expPill.isExpired) tr.style.background = "rgba(255,107,107,.08)";
+      tr.innerHTML = `
+        <td>${esc(it.name)}</td>
+        <td>${esc(it.sku||"")}</td>
+        <td>${money(it.cost)}</td>
+        <td>${num(it.par)}</td>
+        <td>${(packQtyForItem(it)>1?Math.floor(availableQty(it.id)/packQtyForItem(it)):"—")}</td><td>${fmtQty(availableQty(it.id))}</td>
+        <td><span class="${expPill.cls}">${esc(expPill.text)}</span></td>
+        <td><span class="pill ${st.cls}">${st.label}</span></td>
+        <td>
+          <button data-act="edit" data-id="${it.id}" class="primary">${lang==="es"?"Editar":"Edit"}</button>
+          <button data-act="del" data-id="${it.id}" class="danger">${lang==="es"?"Borrar":"Delete"}</button>
+        </td>`;
+      tb.appendChild(tr);
+    }
+
+    tb.onclick = (e)=>{
+      const btn = e.target.closest("button"); if(!btn) return;
+      const id = btn.dataset.id;
+      const act = btn.dataset.act;
+      const idx = db.items.findIndex(x=>x.id===id); if(idx<0) return;
+
+      if(act==="del"){
+        if(!confirm(lang==="es"?"¿Borrar artículo?":"Delete item?")) return;
+        db.items.splice(idx,1);
+        db.receipts.forEach(r=> r.lines = (r.lines||[]).filter(l=>l.itemId!==id));
+        saveDB(); renderAll(); return;
+      }
+      if(act==="edit"){
+        const it = db.items[idx];
+        $("itemSku").value = it.sku||"";
+        $("itemName").value = it.name||"";
+        $("itemUnit").value = it.unit||"";
+        $("itemPack").value = it.packQty || 1;
+        $("itemCost").value = it.cost ?? 0;
+        $("itemPar").value = it.par ?? 0;
+        $("itemOnHand").value = availableQty(it.id);
+        try{ $("itemExp").value = nextExpForItem(it.id) || it.defaultExp || ""; }catch{}
+alert(lang==="es"?"Edita y presiona Guardar.":"Edit fields then press Save Item.");
+      }
+    };
+  }
+
+  function renderItemSelects(){
+    const items = [...db.items].sort((a,b)=>a.name.localeCompare(b.name));
+    const sel1 = $("lineItemSelect");
+    const sel2 = $("saleItemSelect");
+    sel1.innerHTML = ""; sel2.innerHTML = "";
+    for(const it of items){
+      const opt1 = document.createElement("option");
+      opt1.value = it.id;
+      opt1.textContent = it.sku ? `${it.name} (${it.sku})` : it.name;
+      sel1.appendChild(opt1);
+
+      const opt2 = document.createElement("option");
+      opt2.value = it.id;
+      opt2.textContent = it.sku ? `${it.name} (${it.sku})` : it.name;
+      sel2.appendChild(opt2);
+    }
+
+    // Waste datalist (helps exact matching so waste subtracts inventory)
+    const dl = $("wasteItems");
+    if(dl){
+      dl.innerHTML = "";
+      for(const it of items){
+        const opt = document.createElement("option");
+        opt.value = it.name;
+        dl.appendChild(opt);
+        if(it.sku){
+          const optSku = document.createElement("option");
+          optSku.value = it.sku;
+          dl.appendChild(optSku);
+        }
+      }
+    }
+  }
+
+  // RECEIPTS
+  let activeCode = "";
+  try{ $("lineUom").value = "piece"; }catch{}
+  try{ $("sUom").value = "piece"; }catch{}
+  try{ $("wUom").value = "piece"; }catch{}
+
+  $("startRcptBtn").addEventListener("click", ()=>{
+    const code = $("rcptCode").value.trim();
+    const date = $("rcptDate").value || todayISO();
+    if(!code){ alert(lang==="es"?"Ingresa código del recibo.":"Enter receipt/invoice code."); return; }
+
+    let r = db.receipts.find(x=>x.code===code);
+    if(r && (r.date||"") !== date){
+      alert(lang==="es" ? "Ese recibo es de otro día. Está archivado en All Logs." : "That receipt is from another day. It\'s archived in All Logs.");
+      return;
+    }
+    if(!r){ r = { code, date, lines: [] }; db.receipts.unshift(r); }
+    else r.date = date;
+
+    if(!db.receiptsActiveCodes.includes(code)) db.receiptsActiveCodes.push(code);
+    activeCode = code;
+    saveDB(); renderAll();
+  });
+
+  $("addLineBtn").addEventListener("click", ()=>{
+    if(!activeCode){ alert(lang==="es"?"Primero inicia un recibo.":"Start a receipt first."); return; }
+    const r = db.receipts.find(x=>x.code===activeCode); if(!r) return;
+
+    const itemId = $("lineItemSelect").value;
+    const uom = ($("lineUom")?.value || "piece");
+    const expected = Math.max(0, num($("lineExpected").value));
+    const received = Math.max(0, num($("lineReceived").value));
+    const unitCost = Math.max(0, num($("lineUnitCost").value)); // per selected uom
+    const expDate = $("lineExp").value || "";
+    if(!itemId){ alert(lang==="es"?"Elige un artículo.":"Pick an item."); return; }
+
+    const ex = r.lines.find(l=>
+      l.itemId===itemId &&
+      (l.uom||"piece")===uom &&
+      String(l.expDate||"")===(expDate||"") &&
+      num(l.unitCost||0)===num(unitCost||0)
+    );
+
+    if(ex){
+      if(!ex.id) ex.id = uid();
+      ex.uom = ex.uom || uom;
+      ex.expected += expected;
+      ex.received += received;
+      ex.expDate = expDate || ex.expDate || "";
+      if(unitCost>0) ex.unitCost = unitCost;
+      syncReceiptLineToBatch(r, ex);
+    } else {
+      const line = { id: uid(), itemId, uom, expDate, expected, received, unitCost: unitCost>0?unitCost:0 };
+      r.lines.push(line);
+      syncReceiptLineToBatch(r, line);
+    }
+
+    $("lineExpected").value = ""; $("lineReceived").value = ""; $("lineUnitCost").value = ""; $("lineExp").value = "";
+    saveDB(); renderAll();
+  });
+
+  $("bulkImportBtn").addEventListener("click", ()=>{
+    if(!activeCode){ alert(lang==="es"?"Primero inicia un recibo.":"Start a receipt first."); return; }
+    const r = db.receipts.find(x=>x.code===activeCode); if(!r) return;
+
+    const text = $("bulkPaste").value.trim(); if(!text) return;
+    const rows = text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    let added=0;
+
+    for(const row of rows){
+      const parts = row.split(",").map(x=>x.trim());
+      if(parts.length<2) continue;
+      const name = parts[0];
+      const expected = Math.max(0, num(parts[1]));
+      const received = Math.max(0, num(parts[2] ?? parts[1]));
+      let unitCost = 0;
+      let expDate = "";
+      const p3 = (parts[3] ?? "").trim();
+      const p4 = (parts[4] ?? "").trim();
+      const looksDate = (s)=>/^\d{4}-\d{2}-\d{2}$/.test(s);
+      if(p3){
+        if(looksDate(p3)) expDate = p3;
+        else unitCost = Math.max(0, num(p3));
+      }
+      if(p4){
+        if(looksDate(p4)) expDate = p4;
+      }
+
+      let it = db.items.find(x=>x.name.toLowerCase()===name.toLowerCase());
+      if(!it){
+        it = { id: uid(), sku:"", name, unit:"", cost:0, par:0, onHand:0 };
+        db.items.push(it);
+      }
+
+      const ex = r.lines.find(l=>
+        l.itemId===it.id &&
+        (l.uom||"piece")==="piece" &&
+        String(l.expDate||"")===(expDate||"") &&
+        num(l.unitCost||0)===num(unitCost||0)
+      );
+
+      if(ex){
+        if(!ex.id) ex.id = uid();
+        ex.expected += expected;
+        ex.received += received;
+        if(unitCost>0) ex.unitCost = unitCost;
+        if(expDate) ex.expDate = expDate;
+        syncReceiptLineToBatch(r, ex);
+      } else {
+        const line = { id: uid(), itemId: it.id, uom:"piece", expDate, expected, received, unitCost: unitCost>0?unitCost:0 };
+        r.lines.push(line);
+        syncReceiptLineToBatch(r, line);
+      }
+
+      added++;
+    }
+
+    $("bulkPaste").value="";
+    saveDB(); renderAll();
+    alert(lang==="es"?`Se importaron ${added} líneas.`:`Imported ${added} lines.`);
+  });
+
+  $("clearLinesBtn").addEventListener("click", ()=>{
+    if(!activeCode) return;
+    const r = db.receipts.find(x=>x.code===activeCode); if(!r) return;
+    if(!confirm(lang==="es"?"¿Borrar todas las líneas?":"Clear all lines?")) return;
+    for(const l of (r.lines||[])) if(l.id) removeBatchForReceiptLine(r.code, l.id);
+    r.lines=[]; saveDB(); renderAll();
+  });
+
+  function lineStatus(exp, rec){
+    if(rec===exp) return {label:"OK", cls:"ok"};
+    if(rec>exp) return {label:(lang==="es"?"Extra":"Extra"), cls:"warn"};
+    return {label:(lang==="es"?"Falta":"Missing"), cls:"bad"};
+  }
+
+  $("finalizeRcptBtn").addEventListener("click", ()=>{
+    if(!activeCode){ alert(lang==="es"?"Primero inicia un recibo.":"Start a receipt first."); return; }
+    const r = db.receipts.find(x=>x.code===activeCode); if(!r) return;
+
+    let missingQty=0, tvaDollars=0;
+
+    for(const l of (r.lines||[])){
+      if(!l.id) l.id = uid();
+      const it = db.items.find(x=>x.id===l.itemId);
+      if(!it) continue;
+
+      // ensure batch exists/updated for this line
+      syncReceiptLineToBatch(r, l);
+
+      const uom = (l.uom==="case"||l.uom==="piece") ? l.uom : "piece";
+      const pack = packQtyForItem(it);
+      const expUom = Math.max(0, num(l.expected));
+      const recUom = Math.max(0, num(l.received));
+      const expPieces = expUom * (uom==="case" ? pack : 1);
+      const recPieces = recUom * (uom==="case" ? pack : 1);
+      const unitCostEntered = Math.max(0, num(l.unitCost));
+      const costPerPiece = unitCostEntered>0 ? (uom==="case" ? (unitCostEntered/pack) : unitCostEntered) : Math.max(0, num(it.cost));
+
+      if(recPieces < expPieces){
+        const missPieces = expPieces - recPieces;
+        missingQty += missPieces;
+        tvaDollars += missPieces * costPerPiece;
+      }
+    }
+
+    saveDB(); renderAll();
+    alert((lang==="es"?"Finalizado.\nFaltante: ":"Finalized.\nMissing Qty: ") + missingQty + "\nTVA: " + money(tvaDollars));
+  });
+
+
+  // Delete a delivery/receipt and remove its remaining inventory batches
+  $("deleteRcptBtn")?.addEventListener("click", ()=>{
+    const code = ($("rcptCode")?.value || activeCode || "").trim();
+    if(!code){ alert(lang==="es"?"Ingresa el código del recibo.":"Enter the receipt code."); return; }
+    const rIdx = db.receipts.findIndex(x=>x.code===code);
+    if(rIdx<0){ alert(lang==="es"?"No se encontró ese recibo.":"Receipt not found."); return; }
+    const r = db.receipts[rIdx];
+
+    // If any batch from this receipt was partially consumed, warn (sales/waste may have used it)
+    let consumed = false;
+    if(Array.isArray(db.batches)){
+      for(const l of (r.lines||[])){
+        const bid = batchIdForLine(r.code, l.id);
+        const b = db.batches.find(x=>x.id===bid);
+        if(b && num(b.qtyRemaining) < num(b.qtyReceived||0)) { consumed = true; break; }
+      }
+    }
+
+    const msg = lang==="es"
+      ? (consumed
+        ? "Este recibo ya fue usado (vendido/merma). Borrarlo quitará lo que queda del inventario y puede desbalancear el historial. ¿Seguro?"
+        : "¿Borrar esta entrega? Esto quitará su inventario.")
+      : (consumed
+        ? "This receipt has already been used (sold/waste). Deleting it removes the remaining inventory and may mess up history. Continue?"
+        : "Delete this delivery? This will remove its inventory.");
+
+    if(!confirm(msg)) return;
+
+    // Remove batches for all lines
+    if(Array.isArray(db.batches)){
+      const removeIds = new Set((r.lines||[]).map(l=>batchIdForLine(r.code, l.id)));
+      db.batches = db.batches.filter(b=>!removeIds.has(b.id));
+      // Recompute item on-hand for all items touched
+      for(const l of (r.lines||[])){
+        if(l.itemId) recomputeItemOnHand(l.itemId);
+      }
+    }
+
+    db.receipts.splice(rIdx,1);
+    if(activeCode===code) activeCode = "";
+    saveDB(); renderAll();
+  });
+
+  function renderReceipt(){
+    const tb = $("linesTbody"); tb.innerHTML="";
+    const code = $("rcptCode").value.trim();
+    const r = (db.receiptsActiveCodes||[]).includes(code) ? db.receipts.find(x=>x.code===code) : null;
+    activeCode = r ? r.code : "";
+
+    if(!r){
+      $("rcptSummary").textContent = (lang==="es"
+        ? "No hay entrega activa para este código (hoy). Las entregas viejas están en All Logs."
+        : "No active delivery for this code today. Older deliveries are in All Logs.");
+      return;
+    }
+    $("rcptDate").value = r.date || todayISO();
+
+    const sorted=[...(r.lines||[])].sort((a,b)=>{
+      const an = db.items.find(x=>x.id===a.itemId)?.name || "";
+      const bn = db.items.find(x=>x.id===b.itemId)?.name || "";
+      return an.localeCompare(bn);
+    });
+
+    let missQty=0, miss$=0;
+    for(const l of sorted){
+      if(!l.id) l.id = uid();
+      const it = db.items.find(x=>x.id===l.itemId);
+      const name = it ? it.name : "(deleted)";
+      const uom = (l.uom==="case"||l.uom==="piece") ? l.uom : "piece";
+      const pack = packQtyForItem(it||{});
+      const expUom = Math.max(0,num(l.expected));
+      const recUom = Math.max(0,num(l.received));
+      const expPieces = expUom * (uom==="case" ? pack : 1);
+      const recPieces = recUom * (uom==="case" ? pack : 1);
+      const unitCostEntered = Math.max(0, num(l.unitCost));
+      const costPerPiece = unitCostEntered>0 ? (uom==="case" ? (unitCostEntered/pack) : unitCostEntered) : num(it?.cost||0);
+      const diff = recUom-expUom;
+      const missingPieces = expPieces>recPieces ? (expPieces-recPieces) : 0;
+      const missingDollars = missingPieces * costPerPiece;
+      const st = lineStatus(expUom,recUom);
+      missQty += missingPieces; miss$ += missingDollars;
+
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${esc(name)}</td><td>${esc(l.expDate||"")}</td><td>${expUom} ${uom==="case"?(lang==="es"?"cajas":"cases"):(lang==="es"?"pzs":"pcs")}</td><td>${recUom} ${uom==="case"?(lang==="es"?"cajas":"cases"):(lang==="es"?"pzs":"pcs")}</td><td>${costPerPiece ? money(costPerPiece) + (lang==="es"?" /pz":" /pc") : "$0.00"}</td>
+        <td>${diff}</td>
+        <td>${money(missingDollars)}</td>
+        <td><span class="pill ${st.cls}">${st.label}</span></td>
+        <td>
+          <button class="primary" data-act="edit" data-line="${l.id}">${lang==="es"?"Editar":"Edit"}</button>
+          <button class="danger" data-act="del" data-line="${l.id}">${lang==="es"?"Borrar":"Delete"}</button>
+        </td>`;
+      tb.appendChild(tr);
+    }
+
+    $("rcptSummary").textContent =
+      (lang==="es"
+        ? `Recibo ${r.code} (${r.date}): Faltante ${missQty} • TVA ${money(miss$)}`
+        : `Receipt ${r.code} (${r.date}): Missing Qty ${missQty} • TVA ${money(miss$)}`);
+
+    tb.onclick=(e)=>{
+      const btn = e.target.closest("button"); if(!btn) return;
+      const act = btn.dataset.act;
+      const lineId = btn.dataset.line;
+      const idx = r.lines.findIndex(x=>x.id===lineId);
+      if(idx<0) return;
+if(act==="del"){
+        if(!confirm(lang==="es"?"¿Borrar esta línea?":"Delete this line?")) return;
+        const dead = r.lines[idx]; if(dead && dead.id) removeBatchForReceiptLine(r.code, dead.id);
+        r.lines.splice(idx,1); saveDB(); renderAll();
+      }
+      if(act==="edit"){
+        const cur=r.lines[idx];
+        const exp=prompt(lang==="es"?"Cant. esperada:":"Expected qty:", String(cur.expected)); if(exp===null) return;
+        const rec=prompt(lang==="es"?"Cant. recibida:":"Received qty:", String(cur.received)); if(rec===null) return;
+        const uc=prompt(lang==="es"?"Costo unitario (opcional):":"Unit cost (optional):", String(cur.unitCost||0)); if(uc===null) return;
+        const ed=prompt(lang==="es"?"Caducidad (AAAA-MM-DD, opcional):":"Exp date (YYYY-MM-DD, optional):", String(cur.expDate||"")); if(ed===null) return;
+        cur.expected=Math.max(0,num(exp));
+        cur.received=Math.max(0,num(rec));
+        cur.unitCost=Math.max(0,num(uc));
+        cur.expDate = String(ed||"").trim();
+        syncReceiptLineToBatch(r, cur);
+        saveDB(); renderAll();
+      }
+    };
+  }
+
+  // SALES
+  $("addSaleBtn").addEventListener("click", ()=>{
+    const date = $("sDate").value || todayISO();
+    const itemId = $("saleItemSelect").value;
+    const uom = ($("sUom")?.value || "piece");
+    const qtyUom = Math.max(0, num($("sQty").value));
+    const priceUom = Math.max(0, num($("sPrice").value));
+    const qty = qtyUom; // keep for validations/messages
+    const price = priceUom;
+    if(!itemId){ alert(lang==="es"?"Elige un artículo.":"Pick an item."); return; }
+    if(qty <= 0){ alert(lang==="es"?"Cantidad inválida.":"Invalid qty."); return; }
+
+    const it = db.items.find(x=>x.id===itemId);
+    if(!it){ alert(lang==="es"?"Artículo no existe.":"Item not found."); return; }
+
+    // consume from delivery batches (FIFO) so different deliveries/prices/expirations are tracked
+    const pack = packQtyForItem(it);
+    const qtyPieces = qtyUom * (uom==="case" ? pack : 1);
+    const have = availableQty(itemId);
+    if(have < qtyPieces){
+      alert(lang==="es"
+        ? `No hay suficiente inventario. En mano: ${have}`
+        : `Not enough inventory. On-hand: ${have}`);
+      return;
+    }
+
+    const take = consumeFromBatches(itemId, qtyPieces);
+    if(!take.ok){
+      alert(lang==="es"?"No hay suficiente inventario.":"Not enough inventory.");
+      return;
+    }
+
+    const revenue = qtyUom * priceUom;
+    const cogs = take.totalCost;
+    const cogsPerUnit = qtyUom>0 ? (cogs / qtyUom) : 0;
+    const profit = revenue - cogs;
+
+    // keep item.onHand in sync (consumeFromBatches already recomputes when batches exist)
+    if(!Array.isArray(db.batches) || db.batches.length===0){
+      it.onHand = Math.max(0, num(it.onHand) - qtyPieces);
+    }
+const sale = {
+      id: uid(),
+      date,
+      itemId,
+      itemName: it.name,
+      uom,
+      qty: qtyUom,
+      qtyPieces,
+      price: priceUom,
+      revenue,
+      cogsPerUnit,
+      cogs,
+      profit
+};
+    db.sales.unshift(sale);
+    db.salesActive.unshift(sale);
+
+
+    $("sQty").value = "";
+    $("sPrice").value = "";
+    saveDB();
+    renderAll();
+  });
+
+  
+  function inventoryTotals(){
+    const rows = [];
+    const byItem = new Map();
+    const hasBatches = Array.isArray(db.batches) && db.batches.length>0;
+
+    for(const it of db.items){
+      byItem.set(it.id, { item: it, qty:0, value:0, costQty:0, nextExp:"" });
+    }
+
+    if(hasBatches){
+      for(const b of db.batches){
+        if(!byItem.has(b.itemId)) continue;
+        const rec = byItem.get(b.itemId);
+        const q = Math.max(0, num(b.qtyRemaining));
+        if(q<=0) continue;
+        const c = Math.max(0, num(b.unitCost));
+        rec.qty += q;
+        rec.value += q*c;
+        rec.costQty += q;
+        if(b.expDate){
+          const d = normDate(b.expDate);
+          if(d && (!rec.nextExp || d < rec.nextExp)) rec.nextExp = d;
+        }
+      }
+    } else {
+      // fallback: use item.onHand and item.cost if batches don't exist
+      for(const it of db.items){
+        const rec = byItem.get(it.id);
+        const q = Math.max(0, num(it.onHand));
+        const c = Math.max(0, num(it.cost));
+        rec.qty = q;
+        rec.value = q*c;
+        rec.costQty = q;
+        rec.nextExp = ""; // not tracked
+      }
+    }
+
+    for(const rec of byItem.values()){
+      if(rec.qty>0 || (db.items.length<=200)) rows.push(rec);
+    }
+    // sort by item name
+    rows.sort((a,b)=> (a.item.name||"").localeCompare(b.item.name||""));
+    return rows;
+  }
+
+  function renderInventory(){
+    const rows = inventoryTotals();
+    const q = ($("invSearch")?.value || "").trim().toLowerCase();
+    const tbody = $("invTable").querySelector("tbody");
+    tbody.innerHTML = "";
+
+    // headers / labels
+    $("invTitle").textContent = (lang==="es" ? "Inventario" : "Inventory");
+    $("invHint").textContent = (lang==="es" ? "Totales de todas las entregas (lotes)." : "Totals across all deliveries (batches).");
+    $("invSearch").placeholder = (lang==="es" ? "Buscar artículo..." : "Search item...");
+    $("invThItem").textContent = (lang==="es" ? "Artículo" : "Item");
+    $("invThCases").textContent = (lang==="es" ? "Cajas" : "Cases");
+    $("invThPieces").textContent = (lang==="es" ? "Piezas" : "Pieces");
+    $("invThUnit").textContent = (lang==="es" ? "Unidad" : "Unit");
+    $("invThAvgCost").textContent = (lang==="es" ? "Costo prom." : "Avg Cost");
+    $("invThValue").textContent = (lang==="es" ? "Valor total" : "Total Value");
+    $("invThNextExp").textContent = (lang==="es" ? "Próx. venc." : "Next Exp");
+
+    let shown = 0;
+    for(const r of rows){
+      const name = (r.item.name||"");
+      if(q && !name.toLowerCase().includes(q) && !(r.item.sku||"").toLowerCase().includes(q)) continue;
+
+      const avg = r.costQty>0 ? (r.value / r.costQty) : 0;
+      const tr = document.createElement("tr");
+
+      // expiration status
+      let expText = r.nextExp || "";
+      let expBadge = "";
+      if(expText){
+        const days = daysUntil(expText);
+        if(days < 0) expBadge = "bad";
+        else if(days <= 3) expBadge = "warn";
+        else expBadge = "good";
+      }
+
+      tr.innerHTML = `
+        <td><div style="font-weight:700">${esc(name)}</div><div class="hint">${esc(r.item.sku||"")}</div></td>
+        <td style="white-space:nowrap">${(packQtyForItem(r.item)>1?Math.floor(r.qty/packQtyForItem(r.item)):"—")}</td>
+        <td style="white-space:nowrap">${fmtQty(r.qty)}</td>
+        <td>${esc((r.item.unit||"ea"))}${packQtyForItem(r.item)>1 ? ` (${packQtyForItem(r.item)}/case)` : ""}</td>
+        <td style="white-space:nowrap">${money(avg)}</td>
+        <td style="white-space:nowrap">${money(r.value)}</td>
+        <td style="white-space:nowrap">${expText ? `<span class="pill ${expBadge}">${expText}</span>` : `<span class="hint">—</span>`}</td>
+      `;
+      tbody.appendChild(tr);
+      shown++;
+    }
+
+    $("chipInv").textContent = shown;
+  }
+
+function renderSales(){
+    const tb = $("salesTbody"); tb.innerHTML="";
+    const list = Array.isArray(db.salesActive) ? db.salesActive : [];
+    for(const s of list.slice(0,250)){
+      const tr = document.createElement("tr");
+      const unlocked = isUnlocked();
+      tr.innerHTML = `
+        <td>${esc(s.date)}</td>
+        <td>${esc(s.itemName || (db.items.find(x=>x.id===s.itemId)?.name || ""))}</td>
+        <td>${num(s.qty)} ${s.uom==="case"?(lang==="es"?"cajas":"cases"):(lang==="es"?"pzs":"pcs")}</td>
+        <td>${money(s.price)}${s.uom==="case"?(lang==="es"?" /caja":" /case"):(lang==="es"?" /pz":" /pc")}</td>
+        <td>${money(s.revenue)}</td>
+        ${unlocked ? `<td>${money(s.cogs)}</td><td>${money(s.profit)}</td>` : ``}
+        <td><button class="danger" data-id="${s.id}">${lang==="es"?"Borrar":"Delete"}</button></td>
+      `;
+      tb.appendChild(tr);
+    }
+    tb.onclick = (e)=>{
+      const btn = e.target.closest("button[data-id]");
+      if(!btn) return;
+      const id = btn.dataset.id;
+
+      const sale = db.sales.find(x=>x.id===id);
+      if(!sale){ return; }
+
+      if(!confirm(lang==="es"
+        ? "¿Borrar venta? (esto regresa inventario)"
+        : "Delete sale? (this will RESTORE inventory)")) return;
+
+      // Restore inventory back into batches (as pieces)
+      const it = db.items.find(x=>x.id===sale.itemId);
+      const pack = packQtyForItem(it||{});
+      const qtyPieces = Math.max(0, num(sale.qtyPieces != null ? sale.qtyPieces : (num(sale.qty) * (sale.uom==="case" ? pack : 1))));
+      if(qtyPieces>0 && sale.itemId){
+        if(!Array.isArray(db.batches)) db.batches = [];
+        const unitCost = qtyPieces>0 ? (Math.max(0,num(sale.cogs))/qtyPieces) : Math.max(0,num(it?.cost||0));
+        const bid = `undo:sale:${id}`;
+        let b = db.batches.find(x=>x.id===bid);
+        if(!b){
+          b = {
+            id: bid,
+            itemId: sale.itemId,
+            receivedDate: sale.date || todayISO(),
+            expDate: "",
+            unitCost: unitCost,
+            qtyReceived: 0,
+            qtyRemaining: 0,
+            source: "sale_undo"
+          };
+          db.batches.push(b);
+        }
+        b.unitCost = unitCost || b.unitCost;
+        b.qtyReceived = Math.max(0, num(b.qtyReceived)) + qtyPieces;
+        b.qtyRemaining = Math.max(0, num(b.qtyRemaining)) + qtyPieces;
+        recomputeItemOnHand(sale.itemId);
+        recomputeAvgCostFromBatches(sale.itemId);
+      }
+
+      db.sales = (db.sales||[]).filter(x=>x.id!==id);
+      db.salesActive = (db.salesActive||[]).filter(x=>x.id!==id);
+      saveDB(); renderAll();
+    };
+
+    const tday = todayISO();
+    const today = (db.salesActive||[]).filter(x=>x.date===tday);
+    const rev = today.reduce((s,x)=>s+num(x.revenue),0);
+    const prof = today.reduce((s,x)=>s+num(x.profit),0);
+    $("salesTodayRevenue").textContent = money(rev);
+    $("salesTodayProfit").textContent = (lang==="es"?"Ganancia hoy (est): ":"Today Profit (est): ") + money(prof);
+  }
+
+  // TVA
+  $("saveTargetBtn").addEventListener("click", ()=>{
+    const tday = todayISO();
+    db.tvaTargetByDate[tday] = Math.max(0, num($("tvaTarget").value));
+    saveDB(); renderAll();
+  });
+
+  // WASTE
+  $("addWasteBtn").addEventListener("click", ()=>{
+    const date = $("wDate").value || todayISO();
+    const item = $("wItem").value.trim();
+    const uom = ($("wUom")?.value || "piece"); // piece | case
+    const qtyUom = Math.max(0, num($("wQty").value));
+    const cost = Math.max(0, num($("wCost").value));
+    const reason = $("wReason").value.trim();
+    if(!item){ alert(lang==="es"?"Se requiere artículo.":"Waste item required."); return; }
+    if(qtyUom <= 0){ alert(lang==="es"?"Cantidad inválida.":"Invalid qty."); return; }
+
+    // Convert to pieces for inventory math (batches/on-hand are stored in pieces)
+    let qtyPieces = qtyUom;
+
+    // If this waste item matches an inventory item, subtract it from batches/on-hand
+    let loggedCost = cost;
+    // Try to match to an inventory item so waste subtracts from inventory.
+// Priority: exact SKU match, exact name match, then a single partial-name match.
+const key = item.toLowerCase().trim();
+let invItem =
+  db.items.find(x=>String(x.sku||"").toLowerCase()===key) ||
+  db.items.find(x=>String(x.name||"").toLowerCase()===key);
+
+if(!invItem){
+  const matches = db.items.filter(x=>{
+    const nm = String(x.name||"").toLowerCase();
+    const sku = String(x.sku||"").toLowerCase();
+    return (sku && sku===key) || (nm && (nm.includes(key) || key.includes(nm)));
+  });
+  if(matches.length===1) invItem = matches[0];
+}
+
+if(invItem){
+      const pack = packQtyForItem(invItem);
+      qtyPieces = qtyUom * (uom==="case" ? pack : 1);
+
+      const have = availableQty(invItem.id);
+      if(have < qtyPieces){
+        alert(lang==="es"
+          ? `No hay suficiente inventario para merma. En mano: ${have}`
+          : `Not enough inventory for waste. On-hand: ${have}`);
+        return;
+      }
+      const take = consumeFromBatches(invItem.id, qtyPieces);
+      if(!take.ok){
+        alert(lang==="es"?"No hay suficiente inventario.":"Not enough inventory.");
+        return;
+      }
+      if(!(loggedCost>0)) loggedCost = take.totalCost;
+    } else {
+      alert(lang==="es"
+        ? "No se encontró un artículo de inventario con ese nombre/SKU. Selecciona uno existente para que la merma reste inventario."
+        : "No inventory item matched that name/SKU. Pick an existing item so waste subtracts inventory.");
+      return;
+    }
+
+    db.waste.unshift({ id: uid(), date, item, uom, qtyUom, qty: qtyPieces, cost: loggedCost, reason });
+    $("wItem").value=""; $("wQty").value=""; $("wCost").value=""; $("wReason").value="";
+    try{ $("wUom").value = "piece"; }catch{}
+    saveDB(); renderAll();
+  });
+
+
+  // BACKUP
+  $("exportBtn").addEventListener("click", ()=>{
+    const blob = new Blob([JSON.stringify(db,null,2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "par-ops-backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  $("importBtn").addEventListener("click", ()=> $("importFile").click());
+  $("importFile").addEventListener("change",(e)=>{
+    const file=e.target.files?.[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{ db = JSON.parse(reader.result); saveDB(); renderAll(); alert(lang==="es"?"Importado.":"Imported."); }
+      catch{ alert(lang==="es"?"Falló la importación.":"Import failed."); }
+    };
+    reader.readAsText(file);
+    e.target.value="";
+  });
+  $("wipeBtn").addEventListener("click", ()=>{
+    if(!confirm(lang==="es"?"¿Borrar TODOS los datos?":"Wipe ALL data?")) return;
+    db = defaultDB(); saveDB(); renderAll();
+  });
+
+  // CHARTS
+  
+  function inventoryValueSeries(){
+    // Build daily inventory value based on receipts (+), sales COGS (-), waste (-)
+    // Note: this is a trend line (starting at 0 on first day); "Inventory Value (now)" KPI is exact from current batches.
+    const delta = new Map(); // date -> delta$
+    const add = (d,v)=> delta.set(d, (delta.get(d)||0) + num(v));
+
+    for(const r of (db.receipts||[])){
+      const date = r.date || todayISO();
+      for(const l of (r.lines||[])){
+        const it = db.items.find(x=>x.id===l.itemId);
+        const uom = (l.uom==="case"||l.uom==="piece") ? l.uom : "piece";
+        const pack = packQtyForItem(it||{});
+        const recUom = Math.max(0, num(l.received));
+        const recPieces = recUom * (uom==="case" ? pack : 1);
+        const unitCostEntered = Math.max(0, num(l.unitCost));
+        const costPerPiece = unitCostEntered>0 ? (uom==="case" ? (unitCostEntered/pack) : unitCostEntered) : Math.max(0, num(it?.cost||0));
+        add(date, recPieces * costPerPiece);
+      }
+    }
+    for(const s of (db.sales||[])){
+      const date = s.date || todayISO();
+      add(date, -num(s.cogs));
+    }
+    for(const w of (db.waste||[])){
+      const date = w.date || todayISO();
+      add(date, -num(w.cost));
+    }
+
+    const days = [...delta.keys()].sort();
+    let running = 0;
+    const vals = [];
+    for(const d of days){
+      running += num(delta.get(d));
+      vals.push(Math.max(0, running));
+    }
+    return { days, vals };
+  }
+
+  function groupDaily(log, valueKey){
+    const map=new Map();
+    for(const e of log){
+      const d=e.date || todayISO();
+      map.set(d, (map.get(d)||0) + num(e[valueKey]));
+    }
+    const days=[...map.keys()].sort();
+    return { days, vals: days.map(d=>map.get(d)) };
+  }
+
+  function drawLine(canvas, labels, vals, yLabel, secondaryVals=null){
+    if(!canvas) return;
+    const ctx=canvas.getContext("2d");
+
+    // Resize canvas to its displayed size (fixes "weird" / blurry charts)
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.max(10, Math.floor(rect.width));
+    const cssH = Math.max(10, Math.floor(rect.height));
+    const needW = Math.floor(cssW * dpr);
+    const needH = Math.floor(cssH * dpr);
+    if(canvas.width !== needW || canvas.height !== needH){
+      canvas.width = needW;
+      canvas.height = needH;
+    }
+    ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
+
+    const w=cssW, h=cssH;
+    ctx.clearRect(0,0,w,h);
+
+    const padL=44,padR=16,padT=12,padB=34;
+    const plotW=w-padL-padR, plotH=h-padT-padB;
+
+    if(!vals || vals.length===0){
+      ctx.fillStyle="rgba(233,238,252,.7)";
+      ctx.font="14px system-ui";
+      ctx.fillText(lang==="es" ? "Sin datos aún." : "No data yet.", 18, 42);
+      return;
+    }
+
+    const maxV=Math.max(1,...vals, ...(secondaryVals||[0]));
+    ctx.strokeStyle="rgba(255,255,255,.08)";
+    ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const y=padT+plotH*(i/4);
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+plotW,y); ctx.stroke();
+    }
+
+    ctx.fillStyle="rgba(233,238,252,.65)";
+    ctx.font="12px system-ui";
+    for(let i=0;i<=4;i++){
+      const v=maxV-(maxV*(i/4));
+      const y=padT+plotH*(i/4);
+      ctx.fillText(v.toFixed(0), 8, y+4);
+    }
+    ctx.fillText(yLabel, 8, 12);
+
+    function plot(values, stroke){
+      ctx.strokeStyle=stroke; ctx.lineWidth=2;
+      ctx.beginPath();
+      values.forEach((v,i)=>{
+        const x=padL + (values.length===1 ? plotW/2 : plotW*(i/(values.length-1)));
+        const y=padT + plotH*(1-(v/maxV));
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    
+      // Point markers (so single-day charts still show something)
+      ctx.fillStyle = stroke;
+      values.forEach((v,i)=>{
+        const x=padL + (values.length===1 ? plotW/2 : plotW*(i/(values.length-1)));
+        const y=padT + plotH*(1-(v/maxV));
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI*2);
+        ctx.fill();
+      });
+}
+
+    plot(vals, "rgba(122,162,255,.95)");
+    if(secondaryVals) plot(secondaryVals, "rgba(100,255,218,.85)");
+
+    const step=Math.max(1, Math.floor(labels.length/6));
+    ctx.fillStyle="rgba(233,238,252,.55)";
+    for(let i=0;i<labels.length;i+=step){
+      const x=padL + (labels.length===1 ? plotW/2 : plotW*(i/(labels.length-1)));
+      ctx.fillText(String(labels[i]).slice(5), x-16, h-12);
+    }
+  }
+
+
+  function renderCharts(){
+    const sales = groupDaily(db.sales, "revenue");
+    drawLine($("chartSales"), sales.days, sales.vals, "$");
+    drawLine($("chartSales2"), sales.days, sales.vals, "$");
+
+    const profit = groupDaily(db.sales, "profit");
+    drawLine($("chartTva"), profit.days, profit.vals, "$");
+
+    const waste = groupDaily(db.waste, "cost");
+    drawLine($("chartWaste"), waste.days, waste.vals, "$");
+    if($("chartWasteDash")) drawLine($("chartWasteDash"), waste.days, waste.vals, "$");
+
+    const targetVals = profit.days.map(d => num(db.tvaTargetByDate[d] || 0));
+    drawLine($("chartTarget"), profit.days, profit.vals, "$", targetVals);
+    if($("chartTargetDash")) drawLine($("chartTargetDash"), profit.days, profit.vals, "$", targetVals);
+
+    const inv = inventoryValueSeries();
+    if($("chartInvValue")) drawLine($("chartInvValue"), inv.days, inv.vals, "$");
+
+    // Month charts (only if tab exists)
+    try{ if($("month") && (currentTab==="month")) renderMonth(); }catch{}
+  }
+
+
+  function renderDash(){
+    const tday = todayISO();
+
+    const salesToday = db.sales.filter(x=>x.date===tday);
+    const rev = salesToday.reduce((s,x)=>s+num(x.revenue),0);
+    const prof = salesToday.reduce((s,x)=>s+num(x.profit),0);
+    $("kpiTodayRevenue").textContent = money(rev);
+    $("kpiTodayProfit").textContent = (lang==="es"?"Ganancia hoy (est): ":"Today Profit (est): ") + money(prof);
+
+    const goal = num(db.tvaTargetByDate[tday] || 0); // reused storage: daily PROFIT goal
+    const remaining = Math.max(0, goal - prof);
+    const pct = goal>0 ? Math.min(999, (prof/goal)*100) : 100;
+
+    $("kpiTodayTva").textContent = money(remaining);
+    $("kpiTodayMissing").textContent = (lang==="es"
+      ? `Ganancia: ${money(prof)} • Meta: ${money(goal)} • ${pct.toFixed(0)}%`
+      : `Profit: ${money(prof)} • Goal: ${money(goal)} • ${pct.toFixed(0)}%`);
+
+    // Inventory KPIs (current snapshot)
+    const invRows = inventoryTotals();
+    const invValue = invRows.reduce((s,r)=>s+num(r.value),0);
+    const invQty = invRows.reduce((s,r)=>s+num(r.qty),0);
+    if($("kpiInvValue")) $("kpiInvValue").textContent = money(invValue);
+    if($("kpiInvQty")) $("kpiInvQty").textContent = (lang==="es"?"Cant. inventario (piezas): ":"Inventory Qty (pieces): ") + fmtQty(invQty);
+
+    $("chipToday").textContent = money(rev);
+    $("chipItems").textContent = db.items.length;
+    $("chipRcpt").textContent = db.receipts.length;
+    $("chipSales").textContent = db.sales.length;
+    $("chipTva").textContent = Object.keys(db.tvaTargetByDate||{}).length;
+    $("chipWaste").textContent = db.waste.length;
+    // inventory chip = number of items shown in inventory table
+    try{ $("chipInv").textContent = inventoryTotals().filter(r=>r.qty>0).length; }catch{}
+  }
+
+  function renderTva(){
+    // Repurposed: DAILY PROFIT GOALS (instead of TVA)
+    const tday = todayISO();
+
+    // Actual profit today from Sales
+    const todaySales = db.sales.filter(x=>x.date===tday);
+    const profit = todaySales.reduce((s,x)=>s+num(x.profit),0);
+    const revenue = todaySales.reduce((s,x)=>s+num(x.revenue),0);
+
+    // Stored goal (reusing db.tvaTargetByDate for backward compatibility)
+    const goal = Math.max(0, num(db.tvaTargetByDate[tday] || 0));
+    const variance = profit - goal;
+    const efficiency = goal<=0 ? 100 : Math.min(999, (profit / goal) * 100);
+
+    $("tvaActualKpi").textContent = money(profit);
+    $("tvaTargetPill").textContent = `${lang==="es"?"Meta":"Goal"}: ${money(goal)}`;
+    $("tvaVarPill").textContent = `${lang==="es"?"Variación":"Variance"}: ${money(variance)}`;
+    $("tvaEffPill").textContent = `${lang==="es"?"Progreso":"Progress"}: ${efficiency.toFixed(0)}%`;
+    $("tvaVarPill").className = "pill " + (variance >= 0 ? "ok" : "bad");
+    $("tvaTarget").value = goal || "";
+
+    // Build a daily table from Sales history (last 200 days that have sales)
+    const byDay = new Map(); // date -> {rev, prof}
+    for(const s of db.sales){
+      const d = s.date || "";
+      if(!d) continue;
+      const cur = byDay.get(d) || {rev:0, prof:0};
+      cur.rev += num(s.revenue);
+      cur.prof += num(s.profit);
+      byDay.set(d, cur);
+    }
+    const days = [...byDay.keys()].sort((a,b)=>b.localeCompare(a)).slice(0,200);
+
+    const tb = $("tvaTbody"); tb.innerHTML="";
+    for(const d of days){
+      const v = byDay.get(d) || {rev:0, prof:0};
+      const g = Math.max(0, num(db.tvaTargetByDate[d] || 0));
+      const varr = v.prof - g;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${esc(d)}</td>
+        <td>${money(v.rev)}</td>
+        <td>${money(v.prof)}</td>
+        <td>${money(g)}</td>
+        <td>${money(varr)}</td>
+      `;
+      tb.appendChild(tr);
+    }
+  }
+
+  function renderWaste(){
+    const tb=$("wasteTbody"); tb.innerHTML="";
+    for(const w of db.waste.slice(0,200)){
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${esc(w.date)}</td><td>${esc(w.item)}</td><td>${fmtWasteQty(w)}</td><td>${money(w.cost)}</td><td>${esc(w.reason||"")}</td>
+        <td><button class="danger" data-id="${w.id}">${lang==="es"?"Borrar":"Delete"}</button></td>`;
+      tb.appendChild(tr);
+    }
+    tb.onclick=(e)=>{
+      const btn=e.target.closest("button[data-id]"); if(!btn) return;
+      const id=btn.dataset.id;
+      if(!confirm(lang==="es"?"¿Borrar merma?":"Delete waste entry?")) return;
+      db.waste = db.waste.filter(x=>x.id!==id);
+      saveDB(); renderAll();
+    };
+
+    const tday=todayISO();
+    const today = db.waste.filter(x=>x.date===tday);
+    $("wasteToday").textContent = money(today.reduce((s,x)=>s+num(x.cost),0));
+    $("wasteTodayQty").textContent = (lang==="es"?"Cant (pzs): ":"Qty (pcs): ") + today.reduce((s,x)=>s+num(x.qty),0);
+  }
+
+  
+  // ALL LOGS
+  function receiptMissingDollars(r){
+    let miss$ = 0;
+    for(const l of (r.lines||[])){
+      const it = db.items.find(x=>x.id===l.itemId);
+      const uom = (l.uom==="case"||l.uom==="piece") ? l.uom : "piece";
+      const pack = packQtyForItem(it||{});
+      const expUom = Math.max(0, num(l.expected));
+      const recUom = Math.max(0, num(l.received));
+      const expPieces = expUom * (uom==="case" ? pack : 1);
+      const recPieces = recUom * (uom==="case" ? pack : 1);
+      const unitCostEntered = Math.max(0, num(l.unitCost));
+      const costPerPiece = unitCostEntered>0 ? (uom==="case" ? (unitCostEntered/pack) : unitCostEntered) : Math.max(0, num(it?.cost||0));
+      if(recPieces < expPieces){
+        miss$ += (expPieces - recPieces) * costPerPiece;
+      }
+    }
+    return miss$;
+  }
+
+  function renderAllLogs(){
+    const filter = $("allLogsFilter")?.value || "all";
+    const showDeliveries = (filter==="all" || filter==="deliveries");
+    const showSales = (filter==="all" || filter==="sales");
+
+    if($("allLogsDeliveriesCard")) $("allLogsDeliveriesCard").classList.toggle("hidden", !showDeliveries);
+    if($("allLogsSalesCard")) $("allLogsSalesCard").classList.toggle("hidden", !showSales);
+
+    // chips
+    try{
+      const total = (db.receipts?.length||0) + (db.sales?.length||0);
+      $("chipAllLogs").textContent = total;
+    }catch{}
+
+    // Date pills (unique dates from receipts + sales + waste + tva targets)
+    const datesSet = new Set();
+    for(const r of (db.receipts||[])) if(r.date) datesSet.add(r.date);
+    for(const s of (db.sales||[])) if(s.date) datesSet.add(s.date);
+    for(const w of (db.waste||[])) if(w.date) datesSet.add(w.date);
+    for(const k of Object.keys(db.tvaTargetByDate||{})) if(k) datesSet.add(k);
+    const dates = Array.from(datesSet).sort((a,b)=> String(b).localeCompare(String(a))); // desc YYYY-MM-DD
+    const row = $("allLogsDatesRow");
+    if(row){
+      row.innerHTML = "";
+      const maxShow = 14;
+      const shown = dates.slice(0, maxShow);
+      for(const d of shown){
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.alldate = d;
+        btn.textContent = d;
+        btn.className = "pill" + (allLogsSelectedDate===d ? " ok" : "");
+        btn.style.cursor = "pointer";
+        row.appendChild(btn);
+      }
+      if(dates.length>maxShow){
+        const more = document.createElement("span");
+        more.className = "muted";
+        more.style.fontSize = "12px";
+        more.textContent = (lang==="es" ? `+${dates.length-maxShow} más…` : `+${dates.length-maxShow} more…`);
+        row.appendChild(more);
+      }
+    }
+    // keep date input synced
+    try{
+      const inp = $("allLogsDatePick");
+      if(inp && !inp.value && allLogsSelectedDate) inp.value = allLogsSelectedDate;
+    }catch{}
+
+    // Selected-day summary
+    const sel = allLogsSelectedDate;
+    const sumDate = sel || (dates[0] || todayISO());
+    const salesDay = (db.sales||[]).filter(x=> (x.date||"")===sumDate);
+    const wasteDay = (db.waste||[]).filter(x=> (x.date||"")===sumDate);
+    const receiptsDay = (db.receipts||[]).filter(x=> (x.date||"")===sumDate);
+    const rev = salesDay.reduce((s,x)=> s + num(x.revenue), 0);
+    const prof = salesDay.reduce((s,x)=> s + num(x.profit), 0);
+    const waste$ = wasteDay.reduce((s,x)=> s + num(x.cost), 0);
+
+    // delivery missing$
+    let miss$ = 0;
+    try{
+      for(const r of receiptsDay){
+        for(const l of (r.lines||[])){
+          const it = db.items.find(x=>x.id===l.itemId);
+          const uom = (l.uom==="case"||l.uom==="piece") ? l.uom : "piece";
+          const pack = packQtyForItem(it||{});
+          const expUom = Math.max(0, num(l.expected));
+          const recUom = Math.max(0, num(l.received));
+          const expPieces = expUom * (uom==="case" ? pack : 1);
+          const recPieces = recUom * (uom==="case" ? pack : 1);
+          if(recPieces < expPieces){
+            const missPieces = expPieces - recPieces;
+            const unitCostEntered = Math.max(0, num(l.unitCost));
+            const costPerPiece = unitCostEntered>0 ? (uom==="case" ? (unitCostEntered/pack) : unitCostEntered) : Math.max(0, num(it?.cost||0));
+            miss$ += missPieces * costPerPiece;
+          }
+        }
+      }
+    }catch{}
+    const goal = Math.max(0, num((db.tvaTargetByDate||{})[sumDate] || 0));
+    const variance = prof - goal;
+
+    if($("allLogsSumRev")) $("allLogsSumRev").textContent = money(rev);
+    if($("allLogsSumProf")) $("allLogsSumProf").textContent = money(prof);
+    if($("allLogsSumWaste")) $("allLogsSumWaste").textContent = money(waste$);
+    if($("allLogsSumGoal")) $("allLogsSumGoal").textContent = (lang==="es"?"Meta: ":"Goal: ") + money(goal);
+    if($("allLogsSumVar")) $("allLogsSumVar").textContent = (lang==="es"?"Variación: ":"Variance: ") + money(variance);
+    if($("allLogsSumMissing")) $("allLogsSumMissing").textContent = (lang==="es"?"Faltante entrega: ":"Delivery Missing: ") + money(miss$);
+
+    const dateFilter = sel || "";
+
+
+    // Deliveries
+    const dTb = $("allLogsDeliveriesTbody");
+    if(dTb){
+      dTb.innerHTML = "";
+      for(const r of (db.receipts||[]).slice(0,200)){
+        const miss = receiptMissingDollars(r);
+        const detailsRows = (r.lines||[]).map(l=>{
+          const it = db.items.find(x=>x.id===l.itemId);
+          const name = it ? it.name : (l.itemName||"(deleted)");
+          const uom = (l.uom==="case"||l.uom==="piece") ? l.uom : "piece";
+          return `<tr>
+            <td>${esc(name)}</td>
+            <td>${esc(l.expDate||"")}</td>
+            <td>${num(l.expected||0)} ${uom==="case"?(lang==="es"?"cajas":"cases"):(lang==="es"?"pzs":"pcs")}</td>
+            <td>${num(l.received||0)} ${uom==="case"?(lang==="es"?"cajas":"cases"):(lang==="es"?"pzs":"pcs")}</td>
+            <td>${money(num(l.unitCost||0))}</td>
+          </tr>`;
+        }).join("");
+
+        const details = `<details>
+          <summary style="cursor:pointer; color:var(--accent)">${lang==="es"?"Ver":"View"}</summary>
+          <div style="margin-top:8px; overflow:auto">
+            <table>
+              <thead><tr>
+                <th>${lang==="es"?"Artículo":"Item"}</th>
+                <th>${lang==="es"?"Caducidad":"Exp"}</th>
+                <th>${lang==="es"?"Esperado":"Expected"}</th>
+                <th>${lang==="es"?"Recibido":"Received"}</th>
+                <th>${lang==="es"?"Costo":"Cost"}</th>
+              </tr></thead>
+              <tbody>${detailsRows || `<tr><td colspan="5" class="hint">—</td></tr>`}</tbody>
+            </table>
+          </div>
+        </details>`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${esc(r.date||"")}</td>
+          <td>${esc(r.code||"")}</td>
+          <td>${(r.lines||[]).length}</td>
+          <td>${money(miss)}</td>
+          <td>${details}</td>
+        `;
+        dTb.appendChild(tr);
+      }
+    }
+
+    // Sales
+    const sTb = $("allLogsSalesTbody");
+    if(sTb){
+      sTb.innerHTML = "";
+      for(const s of (db.sales||[]).slice(0,400)){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${esc(s.date)}</td>
+          <td>${esc(s.itemName || (db.items.find(x=>x.id===s.itemId)?.name || ""))}</td>
+          <td>${num(s.qty)} ${s.uom==="case"?(lang==="es"?"cajas":"cases"):(lang==="es"?"pzs":"pcs")}</td>
+          <td>${money(s.price)}${s.uom==="case"?(lang==="es"?" /caja":" /case"):(lang==="es"?" /pz":" /pc")}</td>
+          <td>${money(s.revenue)}</td>
+          <td>${money(s.cogs)}</td>
+          <td>${money(s.profit)}</td>
+        `;
+        sTb.appendChild(tr);
+      }
+    }
+  }
+
+  $("allLogsFilter")?.addEventListener("change", ()=>{ renderAllLogs(); });
+
+function renderAll(){
+    applyAccessControl();
+    applyLang();
+    renderItemSelects();
+    renderItems();
+    renderReceipt();
+    renderInventory();
+    renderSales();
+    renderDash();
+    renderTva();
+    renderWaste();
+    renderMonth();
+    renderAllLogs();
+    // draw charts after layout settles (tabs/hidden panels)
+    requestAnimationFrame(()=>requestAnimationFrame(renderCharts));
+  }
+
+  function bumpDateInputs(){
+    // keep date inputs synced with "today" (local)
+    const t = todayISO();
+    try{ $("rcptDate").value = t; }catch{}
+    try{ $("wDate").value = t; }catch{}
+    try{ $("sDate").value = t; }catch{}
+  }
+
+  // --- MIDNIGHT / NEW-DAY REFRESH (robust against sleeping tabs) ---
+  let _lastDay = todayISO();
+
+  function ensureCurrentDay(){
+    const cur = todayISO();
+    if(cur !== _lastDay){
+      _lastDay = cur;
+      // midnight rollover: archive yesterday's active logs and start fresh
+      onNewDay();
+      bumpDateInputs();
+      try{ $("rcptDate").value = cur; }catch{}
+      try{ $("wDate").value = cur; }catch{}
+      try{ $("sDate").value = cur; }catch{}
+      renderAll(); // forces KPIs + charts to switch to the new day
+    }
+  }
+
+  
+  function onNewDay(){
+    // Move to a fresh day: clear "active" lists so Sales/Receive start empty
+    db.salesActive = [];
+    db.receiptsActiveCodes = [];
+    activeCode = "";
+    try{ $("rcptCode").value = ""; }catch{}
+    try{ $("lineExpected").value = ""; }catch{}
+    try{ $("lineReceived").value = ""; }catch{}
+    try{ $("lineUnitCost").value = ""; }catch{}
+    try{ $("lineExp").value = ""; }catch{}
+    saveDB();
+  }
+
+function scheduleMidnightRefresh(){
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(24,0,0,0); // next local midnight
+    const ms = Math.max(1000, next - now); // safety: at least 1s
+    setTimeout(()=>{
+      // if the tab was throttled/slept, ensureCurrentDay will still catch up
+      ensureCurrentDay();
+      scheduleMidnightRefresh(); // keep doing it daily
+    }, ms);
+  }
+
+  // When the tab becomes active again, immediately catch up
+  window.addEventListener("focus", ensureCurrentDay);
+  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) ensureCurrentDay(); });
+
+  // Also poll periodically (covers long sleep / timer throttling edge cases)
+  setInterval(ensureCurrentDay, 30*1000);
+
+window.addEventListener("resize", ()=>{ try{ renderCharts(); }catch{} });
+
+// Init
+  applyLang();
+  bumpDateInputs();
+  renderAll();
+  scheduleMidnightRefresh();
+  ensureCurrentDay();
+
+</script>
+</body>
+</html>
